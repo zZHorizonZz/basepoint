@@ -42,7 +42,7 @@
     <aquery.version>0.3.1-SNAPSHOT</aquery.version>
 
     <testcontainers.version>2.0.5</testcontainers.version>
-    <postgresql.version>42.7.7</postgresql.version>
+    <postgresql.version>42.7.12</postgresql.version>
     <mysql-connector.version>9.3.0</mysql-connector.version>
     <mssql-jdbc.version>12.10.1.jre11</mssql-jdbc.version>
     <sqlite-jdbc.version>3.50.3.0</sqlite-jdbc.version>
