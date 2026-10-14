@@ -35,7 +35,7 @@ Basepoint does not connect to databases and does not need a schema.
      <dependency>
        <groupId>dev.horizon</groupId>
        <artifactId>basepoint-dialect-postgres</artifactId>
-       <version>0.1.0-SNAPSHOT</version>
+       <version>0.1.0</version>
      </dependency>
    </dependencies>
    ```
