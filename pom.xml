@@ -55,7 +55,7 @@
 
     <testcontainers.version>2.0.5</testcontainers.version>
     <postgresql.version>42.7.7</postgresql.version>
-    <mariadb-client.version>3.5.6</mariadb-client.version>
+    <mariadb-client.version>3.5.9</mariadb-client.version>
     <mssql-jdbc.version>12.10.1.jre11</mssql-jdbc.version>
     <sqlite-jdbc.version>3.50.3.0</sqlite-jdbc.version>
     <jackson.version>2.21.6</jackson.version>
