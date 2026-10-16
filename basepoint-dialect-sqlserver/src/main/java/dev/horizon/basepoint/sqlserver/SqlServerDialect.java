@@ -11,14 +11,16 @@ import dev.horizon.basepoint.Include;
  * <p>
  * Identifiers use square brackets. Placeholders default to {@code @p1}, the style of the Vert.x SQL Server client.
  * For JDBC, use {@link ParameterStyle#QUESTION_MARK}. The dialect renders upserts as {@code MERGE}, returned rows as
- * {@code OUTPUT}, limits as {@code TOP} or {@code OFFSET ... FETCH}, and includes as {@code FOR JSON}.
+ * {@code OUTPUT}, limits as {@code TOP} or {@code OFFSET ... FETCH}, includes as {@code FOR JSON}, and locks as
+ * table hints, such as {@code WITH (UPDLOCK, ROWLOCK)}.
  */
 public final class SqlServerDialect implements Dialect {
 
   public static final String NAME = "SQL Server";
 
   private final ParameterStyle parameters;
-  private final Decorator decorator = new SqlServerMerge().then(new SqlServerOutput()).then(new SqlServerPaging())
+  private final Decorator decorator = new SqlServerLock().then(new SqlServerMerge()).then(new SqlServerOutput())
+      .then(new SqlServerPaging())
       .then(Decorator.of(Include.class, SqlServerJson::new));
 
   public SqlServerDialect() {

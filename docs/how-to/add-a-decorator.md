@@ -16,15 +16,12 @@ This example adds `tenant_id = 42` to every SELECT on the `orders` table.
          && table.name().equals("orders") && statement.has(Clause.Select.class))) {
        return statement;
      }
-     Filter filter = eq("tenant_id", 42);
-     return statement.find(Clause.Where.class)
-         .map(where -> statement.replace(where, new Clause.Where(and(where.filter(), filter))))
-         .orElseGet(() -> statement.after(Clause.From.class, new Clause.Where(filter)));
+     return statement.where(eq("tenant_id", 42));
    });
    ```
 
-   The decorator returns other statements unchanged. If the statement has a `WHERE` clause, the decorator combines
-   the filters. Otherwise, it adds a `WHERE` clause after `FROM`.
+   The decorator returns other statements unchanged. `where` combines the filter with the `WHERE` clause of the
+   statement, or adds a `WHERE` clause after `FROM` if the statement has none.
 
 2. Create a dialect that applies the decorator:
 

@@ -122,6 +122,30 @@ public record Statement(Source source, List<Clause> clauses) implements Node {
     return find(anchor).map(found -> replace(found, found, clause)).orElseGet(() -> with(clause));
   }
 
+  /**
+   * Returns a copy of this statement narrowed by a filter. The filter joins the filter of an existing {@code WHERE}
+   * clause with {@code AND}, or a new {@code WHERE} clause goes after the {@code FROM}, the {@code SET} or the
+   * {@code DELETE FROM} clause.
+   *
+   * @param filter the filter
+   * @return the new statement
+   * @throws IllegalStateException if the statement is not a SELECT, an UPDATE or a DELETE
+   */
+  public Statement where(Filter filter) {
+    Optional<Clause.Where> where = find(Clause.Where.class);
+    if (where.isPresent()) {
+      return replace(where.get(), new Clause.Where(Filter.and(where.get().filter(), filter)));
+    }
+    for (Class<? extends Clause> anchor : List.of(Clause.From.class, Clause.Set.class, Clause.DeleteFrom.class)) {
+      Optional<? extends Clause> found = find(anchor);
+      if (found.isPresent()) {
+        return replace(found.get(), found.get(), new Clause.Where(filter));
+      }
+    }
+    throw new IllegalStateException("Only a SELECT, an UPDATE or a DELETE has a filter, but the statement has the"
+        + " clauses " + clauses + ".");
+  }
+
   private int indexOf(Clause clause) {
     for (int i = 0; i < clauses.size(); i++) {
       if (clauses.get(i) == clause) {

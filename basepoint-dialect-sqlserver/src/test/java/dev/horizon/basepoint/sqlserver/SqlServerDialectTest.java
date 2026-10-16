@@ -7,6 +7,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import dev.horizon.basepoint.Buildable;
 import dev.horizon.basepoint.CollectionReference;
 import dev.horizon.basepoint.Dialect;
+import dev.horizon.basepoint.LockMode;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -26,6 +27,10 @@ class SqlServerDialectTest {
             "SELECT [t0].* FROM [orders] AS [t0] WHERE ([t0].[state] = @p1)"),
         arguments("brackets in names", DIALECT.collection("a]b").query(),
             "SELECT [t0].* FROM [a]]b] AS [t0]"),
+        arguments("update lock", ORDERS.query().where(eq("state", "OPEN")).lock(LockMode.UPDATE),
+            "SELECT [t0].* FROM [orders] AS [t0] WITH (UPDLOCK, ROWLOCK) WHERE ([t0].[state] = @p1)"),
+        arguments("skip locked", ORDERS.query().limit(1).lock(LockMode.UPDATE_SKIP_LOCKED),
+            "SELECT TOP (1) [t0].* FROM [orders] AS [t0] WITH (UPDLOCK, ROWLOCK, READPAST)"),
         arguments("limit", ORDERS.query().limit(10),
             "SELECT TOP (10) [t0].* FROM [orders] AS [t0]"),
         arguments("distinct limit", ORDERS.query().columns("state").distinct().limit(10),

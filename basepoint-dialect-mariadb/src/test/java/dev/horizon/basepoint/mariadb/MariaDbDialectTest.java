@@ -8,6 +8,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import dev.horizon.basepoint.Buildable;
 import dev.horizon.basepoint.CollectionReference;
 import dev.horizon.basepoint.Dialect;
+import dev.horizon.basepoint.LockMode;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -28,6 +29,10 @@ class MariaDbDialectTest {
             "SELECT `t0`.* FROM `orders` AS `t0` WHERE (`t0`.`state` = ?)"),
         arguments("backticks in names", DIALECT.collection("a`b").query(),
             "SELECT `t0`.* FROM `a``b` AS `t0`"),
+        arguments("share lock", ORDERS.query().lock(LockMode.SHARE),
+            "SELECT `t0`.* FROM `orders` AS `t0` LOCK IN SHARE MODE"),
+        arguments("update lock", ORDERS.query().limit(1).lock(LockMode.UPDATE_SKIP_LOCKED),
+            "SELECT `t0`.* FROM `orders` AS `t0` LIMIT 1 FOR UPDATE SKIP LOCKED"),
         arguments("offset without limit", ORDERS.query().offset(5),
             "SELECT `t0`.* FROM `orders` AS `t0` LIMIT 18446744073709551615 OFFSET 5"),
         arguments("offset with limit", ORDERS.query().limit(10).offset(5),

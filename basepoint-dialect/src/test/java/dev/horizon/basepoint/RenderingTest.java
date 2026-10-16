@@ -35,6 +35,8 @@ class RenderingTest {
             "SELECT \"t0\".* FROM \"orders\" AS \"t0\"", List.of()),
         arguments("schema-qualified table", DIALECT.collection("shop.orders").query(),
             "SELECT \"t0\".* FROM \"shop\".\"orders\" AS \"t0\"", List.of()),
+        arguments("lock", ORDERS.query().where(eq("id", 1)).lock(LockMode.UPDATE),
+            "SELECT \"t0\".* FROM \"orders\" AS \"t0\" WHERE (\"t0\".\"id\" = ?) FOR UPDATE", List.of(1)),
         arguments("columns", ORDERS.query().columns("id", "state"),
             "SELECT \"t0\".\"id\", \"t0\".\"state\" FROM \"orders\" AS \"t0\"", List.of()),
         arguments("filters of two calls", ORDERS.query().where(eq("state", "OPEN")).where(gt("total", 100)),

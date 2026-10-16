@@ -5,6 +5,7 @@ import dev.horizon.basepoint.Clause;
 import dev.horizon.basepoint.Decorator;
 import dev.horizon.basepoint.Dialect;
 import dev.horizon.basepoint.Include;
+import dev.horizon.basepoint.LockMode;
 
 /**
  * The dialect for MariaDB 11.4 and later.
@@ -12,7 +13,8 @@ import dev.horizon.basepoint.Include;
  * <p>
  * Identifiers use backticks. Placeholders default to {@code ?}. The dialect renders upserts as
  * {@code ON DUPLICATE KEY UPDATE} and includes as {@code JSON_ARRAYAGG}. It renders {@code RETURNING} for inserts,
- * updates and deletes. MariaDB supports {@code UPDATE ... RETURNING} from version 13.0.
+ * updates and deletes. MariaDB supports {@code UPDATE ... RETURNING} from version 13.0. A share lock is
+ * {@code LOCK IN SHARE MODE}.
  *
  * <p>
  * {@code JSON_ARRAYAGG} returns at most {@code group_concat_max_len} bytes, which is 1 MB by default. Raise that
@@ -26,7 +28,8 @@ public final class MariaDbDialect implements Dialect {
   private final Decorator decorator = new MariaDbLimits()
       .then(Decorator.of(Clause.OnConflict.class, MariaDbOnDuplicateKey::new))
       .then(Decorator.of(Clause.DefaultValues.class, ignored -> new MariaDbEmptyRow()))
-      .then(Decorator.of(Include.class, MariaDbJson::new));
+      .then(Decorator.of(Include.class, MariaDbJson::new))
+      .then(Decorator.of(Clause.Lock.class, lock -> lock.mode() == LockMode.SHARE ? new MariaDbShareLock() : lock));
 
   public MariaDbDialect() {
     this(ParameterStyle.QUESTION_MARK);

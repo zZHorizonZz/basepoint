@@ -346,4 +346,24 @@ public interface Clause extends Node {
       sql.names(columns);
     }
   }
+
+  /**
+   * The lock of the rows that a query reads: {@code FOR SHARE}, {@code FOR UPDATE}, {@code FOR UPDATE SKIP LOCKED}
+   * or {@code FOR UPDATE NOWAIT}, at the end of the statement. A dialect whose database locks rows another way, or
+   * not at all, decorates it into its own syntax.
+   *
+   * @param mode the lock
+   */
+  record Lock(LockMode mode) implements Clause {
+
+    @Override
+    public void render(StatementWriter sql) {
+      sql.append(switch (mode) {
+        case SHARE -> "FOR SHARE";
+        case UPDATE -> "FOR UPDATE";
+        case UPDATE_SKIP_LOCKED -> "FOR UPDATE SKIP LOCKED";
+        case UPDATE_NOWAIT -> "FOR UPDATE NOWAIT";
+      });
+    }
+  }
 }

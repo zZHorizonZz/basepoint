@@ -7,6 +7,7 @@ import dev.horizon.basepoint.contract.DeleteContractTest;
 import dev.horizon.basepoint.contract.FilterContractTest;
 import dev.horizon.basepoint.contract.IncludeContractTest;
 import dev.horizon.basepoint.contract.InsertContractTest;
+import dev.horizon.basepoint.contract.LockContractTest;
 import dev.horizon.basepoint.contract.PagingContractTest;
 import dev.horizon.basepoint.contract.TestDatabase;
 import dev.horizon.basepoint.contract.TextFilterContractTest;
@@ -101,6 +102,15 @@ class SqliteContractTest {
 
   @Nested
   class Delete extends DeleteContractTest {
+
+    @Override
+    protected TestDatabase database() {
+      return DATABASE;
+    }
+  }
+
+  @Nested
+  class Lock extends LockContractTest {
 
     @Override
     protected TestDatabase database() {

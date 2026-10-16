@@ -8,6 +8,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import dev.horizon.basepoint.Buildable;
 import dev.horizon.basepoint.CollectionReference;
 import dev.horizon.basepoint.Dialect;
+import dev.horizon.basepoint.LockMode;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -24,6 +25,8 @@ class SqliteDialectTest {
     return Stream.of(
         arguments("question marks", ORDERS.query().where(eq("state", "OPEN")),
             "SELECT \"t0\".* FROM \"orders\" AS \"t0\" WHERE (\"t0\".\"state\" = ?)"),
+        arguments("no lock", ORDERS.query().lock(LockMode.UPDATE),
+            "SELECT \"t0\".* FROM \"orders\" AS \"t0\""),
         arguments("offset without limit", ORDERS.query().offset(5),
             "SELECT \"t0\".* FROM \"orders\" AS \"t0\" LIMIT -1 OFFSET 5"),
         arguments("offset with limit", ORDERS.query().limit(10).offset(5),

@@ -1,13 +1,11 @@
 package dev.horizon.basepoint.contract;
 
-import static dev.horizon.basepoint.Filter.and;
 import static dev.horizon.basepoint.Filter.eq;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.horizon.basepoint.Clause;
 import dev.horizon.basepoint.CollectionReference;
 import dev.horizon.basepoint.Decorator;
-import dev.horizon.basepoint.Filter;
 import dev.horizon.basepoint.Source;
 import dev.horizon.basepoint.Statement;
 import java.sql.SQLException;
@@ -20,10 +18,7 @@ public abstract class DecoratorContractTest extends ContractTest {
         && table.name().equals("orders") && statement.has(Clause.Select.class))) {
       return statement;
     }
-    Filter region = eq("region", "EU");
-    return statement.find(Clause.Where.class)
-        .map(where -> statement.replace(where, new Clause.Where(and(where.filter(), region))))
-        .orElseGet(() -> statement.after(Clause.From.class, new Clause.Where(region)));
+    return statement.where(eq("region", "EU"));
   });
 
   @Test

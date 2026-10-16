@@ -106,6 +106,14 @@ public interface Query extends Filterable<Query>, Pageable<Query>, Combinable {
   Query orderBy(Expression value, Direction direction);
 
   /**
+   * Locks the rows that the query reads, until the transaction of the query ends.
+   *
+   * @param mode the lock
+   * @return a new query with the lock
+   */
+  Query lock(LockMode mode);
+
+  /**
    * Removes duplicate rows ({@code SELECT DISTINCT}).
    *
    * @return a new query that returns distinct rows

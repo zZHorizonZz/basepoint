@@ -3,11 +3,16 @@ package dev.horizon.basepoint;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import dev.horizon.basepoint.Clause.DeleteFrom;
 import dev.horizon.basepoint.Clause.From;
+import dev.horizon.basepoint.Clause.InsertInto;
 import dev.horizon.basepoint.Clause.Limit;
 import dev.horizon.basepoint.Clause.Offset;
 import dev.horizon.basepoint.Clause.OrderBy;
 import dev.horizon.basepoint.Clause.Select;
+import dev.horizon.basepoint.Clause.Set;
+import dev.horizon.basepoint.Clause.Update;
+import dev.horizon.basepoint.Clause.Where;
 import java.util.List;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -31,6 +36,44 @@ class StatementTest {
     void returnsEmptyForAMissingType() {
       assertThat(statement.find(Offset.class)).isEmpty();
       assertThat(statement.has(Offset.class)).isFalse();
+    }
+  }
+
+  @Nested
+  class Narrowing {
+
+    @Test
+    void joinsTheFilterOfAWhereClause() {
+      Where where = new Where(Filter.eq("state", "OPEN"));
+      Statement filtered = new Statement(Source.aliased("orders"), List.of(select, from, where, limit));
+
+      assertThat(filtered.where(Filter.eq("id", 1)).clauses()).containsExactly(select, from,
+          new Where(Filter.and(Filter.eq("state", "OPEN"), Filter.eq("id", 1))), limit);
+    }
+
+    @Test
+    void addsAWhereClauseAfterTheFrom() {
+      assertThat(statement.where(Filter.eq("id", 1)).clauses()).containsExactly(select, from,
+          new Where(Filter.eq("id", 1)), limit);
+    }
+
+    @Test
+    void addsAWhereClauseAfterTheSetOrTheDeleteFrom() {
+      Set set = new Set(List.of());
+      Statement update = new Statement(Source.named("orders"), List.of(new Update(), set));
+      Statement delete = new Statement(Source.named("orders"), List.of(new DeleteFrom()));
+
+      assertThat(update.where(Filter.eq("id", 1)).clauses()).containsExactly(new Update(), set,
+          new Where(Filter.eq("id", 1)));
+      assertThat(delete.where(Filter.eq("id", 1)).clauses()).containsExactly(new DeleteFrom(),
+          new Where(Filter.eq("id", 1)));
+    }
+
+    @Test
+    void rejectsAStatementWithoutRowsToFilter() {
+      Statement insert = new Statement(Source.named("orders"), List.of(new InsertInto(List.of("id"))));
+
+      assertThatThrownBy(() -> insert.where(Filter.eq("id", 1))).isInstanceOf(IllegalStateException.class);
     }
   }
 

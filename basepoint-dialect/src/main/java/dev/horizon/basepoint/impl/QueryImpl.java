@@ -8,6 +8,7 @@ import dev.horizon.basepoint.Direction;
 import dev.horizon.basepoint.Expression;
 import dev.horizon.basepoint.Filter;
 import dev.horizon.basepoint.Include;
+import dev.horizon.basepoint.LockMode;
 import dev.horizon.basepoint.Query;
 import dev.horizon.basepoint.RenderedStatement;
 import dev.horizon.basepoint.Source;
@@ -15,6 +16,7 @@ import dev.horizon.basepoint.Statement;
 import dev.horizon.basepoint.StatementWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -38,7 +40,7 @@ public final class QueryImpl implements Query {
 
   public QueryImpl(Dialect dialect, String table) {
     this(dialect, table, new Steps(List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),
-        List.of(), false, null, null));
+        List.of(), false, null, null, null));
   }
 
   /**
@@ -55,61 +57,66 @@ public final class QueryImpl implements Query {
    * @param distinct true to give each row once
    * @param limit the largest number of rows, or null for all
    * @param offset the number of rows to skip, or null for none
+   * @param lock the lock of the rows, or null for none
    */
   private record Steps(List<String> columns, List<Named> values, List<Named> includes, List<Filter> on,
       List<Filter> filters, List<String> groupBy, List<Filter> having, List<Order> order, boolean distinct, Long limit,
-      Long offset) {
+      Long offset, LockMode lock) {
 
     Steps withColumns(List<String> more) {
       return new Steps(append(columns, more), values, includes, on, filters, groupBy, having, order, distinct, limit,
-          offset);
+          offset, lock);
     }
 
     Steps withValue(Named value) {
       return new Steps(columns, append(values, List.of(value)), includes, on, filters, groupBy, having, order,
-          distinct, limit, offset);
+          distinct, limit, offset, lock);
     }
 
     Steps withInclude(Named include) {
       return new Steps(columns, values, append(includes, List.of(include)), on, filters, groupBy, having, order,
-          distinct, limit, offset);
+          distinct, limit, offset, lock);
     }
 
     Steps withOn(Filter related) {
       return new Steps(columns, values, includes, append(on, List.of(related)), filters, groupBy, having, order,
-          distinct, limit, offset);
+          distinct, limit, offset, lock);
     }
 
     Steps withFilter(Filter filter) {
       return new Steps(columns, values, includes, on, append(filters, List.of(filter)), groupBy, having, order,
-          distinct, limit, offset);
+          distinct, limit, offset, lock);
     }
 
     Steps withGroupBy(List<String> more) {
       return new Steps(columns, values, includes, on, filters, append(groupBy, more), having, order, distinct, limit,
-          offset);
+          offset, lock);
     }
 
     Steps withHaving(Filter filter) {
       return new Steps(columns, values, includes, on, filters, groupBy, append(having, List.of(filter)), order,
-          distinct, limit, offset);
+          distinct, limit, offset, lock);
     }
 
     Steps withOrder(Order more) {
       return new Steps(columns, values, includes, on, filters, groupBy, having, append(order, List.of(more)),
-          distinct, limit, offset);
+          distinct, limit, offset, lock);
     }
 
     Steps withDistinct() {
-      return new Steps(columns, values, includes, on, filters, groupBy, having, order, true, limit, offset);
+      return new Steps(columns, values, includes, on, filters, groupBy, having, order, true, limit, offset, lock);
     }
 
     Steps withLimit(Long rows) {
-      return new Steps(columns, values, includes, on, filters, groupBy, having, order, distinct, rows, offset);
+      return new Steps(columns, values, includes, on, filters, groupBy, having, order, distinct, rows, offset, lock);
     }
 
     Steps withOffset(Long rows) {
-      return new Steps(columns, values, includes, on, filters, groupBy, having, order, distinct, limit, rows);
+      return new Steps(columns, values, includes, on, filters, groupBy, having, order, distinct, limit, rows, lock);
+    }
+
+    Steps withLock(LockMode mode) {
+      return new Steps(columns, values, includes, on, filters, groupBy, having, order, distinct, limit, offset, mode);
     }
 
     private static <T> List<T> append(List<T> list, List<T> items) {
@@ -236,6 +243,11 @@ public final class QueryImpl implements Query {
   }
 
   @Override
+  public Query lock(LockMode mode) {
+    return with(steps.withLock(Objects.requireNonNull(mode, "mode")));
+  }
+
+  @Override
   public CompoundQuery union(Combinable other) {
     return new CompoundQueryImpl(this, CompoundQueryImpl.Operator.UNION_ALL, other);
   }
@@ -329,6 +341,9 @@ public final class QueryImpl implements Query {
     }
     if (steps.offset() != null) {
       clauses.add(new Clause.Offset(steps.offset()));
+    }
+    if (steps.lock() != null) {
+      clauses.add(new Clause.Lock(steps.lock()));
     }
     return new Statement(Source.aliased(table), clauses);
   }

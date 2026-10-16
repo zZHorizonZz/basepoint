@@ -30,7 +30,8 @@ For example, `orders.update().set("state", "CLOSED").where(eq("id", 1))` creates
 The source decides how columns are qualified. SELECT statements use a generated alias, such as `"t0"`. INSERT,
 UPDATE and DELETE statements use the table name.
 
-Statements are immutable. Methods such as `with`, `replace`, `before`, `after` and `remove` return a new statement.
+Statements are immutable. Methods such as `with`, `replace`, `before`, `after`, `remove` and `where` return a new
+statement. `where` narrows a SELECT, an UPDATE or a DELETE by a filter, whether or not it has a `WHERE` clause.
 Call `statement()` on any builder to get its tree before it renders.
 
 ## Rendering

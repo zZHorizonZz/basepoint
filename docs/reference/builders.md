@@ -31,28 +31,29 @@ Each dot-separated part is quoted on its own: `shop.orders` renders as `"shop"."
 
 ## `Query`
 
-| Method                                           | Description                                                                           |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------- |
-| `where(Filter filter)`                           | Adds a filter. A row must match all filters.                                          |
-| `where(String filter)`                           | Adds a filter in the AIP-160 syntax. See [Filter text syntax](filter-text-syntax.md). |
-| `columns(String... columns)`                     | Selects only these columns. Default: all columns (`"t0".*`).                          |
-| `select(String column, Expression value)`        | Selects a value as a named column.                                                    |
-| `count()`                                        | Selects `COUNT(*)` as the column `count`.                                             |
-| `include(String column, Query rows)`             | Adds related rows as a JSON array column.                                             |
-| `includeOne(String column, Query row)`           | Adds the first related row as a JSON object column. Adds `LIMIT 1` to `row`.          |
-| `includeCount(String column, Query rows)`        | Adds the number of related rows as a column.                                          |
-| `on(String column, String outerColumn)`          | Relates this query to the enclosing query: `column = outerColumn`.                    |
-| `groupBy(String... columns)`                     | Adds `GROUP BY` columns.                                                              |
-| `having(Filter filter)`                          | Adds a filter on groups.                                                              |
-| `orderBy(String column)`                         | Sorts ascending by a table column or a `select` column.                               |
-| `orderBy(String column, Direction direction)`    | Sorts by a table column or a `select` column.                                         |
-| `orderBy(Expression value, Direction direction)` | Sorts by a value.                                                                     |
-| `limit(long rows)`                               | Limits the number of rows. Must be greater than 0.                                    |
-| `offset(long rows)`                              | Skips rows. Must be 0 or greater.                                                     |
-| `distinct()`                                     | Renders `SELECT DISTINCT`.                                                            |
-| `union(Combinable other)`                        | Combines with `UNION ALL`.                                                            |
-| `intersect(Combinable other)`                    | Combines with `INTERSECT`.                                                            |
-| `except(Combinable other)`                       | Combines with `EXCEPT`.                                                               |
+| Method                                           | Description                                                                                  |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `where(Filter filter)`                           | Adds a filter. A row must match all filters.                                                 |
+| `where(String filter)`                           | Adds a filter in the AIP-160 syntax. See [Filter text syntax](filter-text-syntax.md).        |
+| `columns(String... columns)`                     | Selects only these columns. Default: all columns (`"t0".*`).                                 |
+| `select(String column, Expression value)`        | Selects a value as a named column.                                                           |
+| `count()`                                        | Selects `COUNT(*)` as the column `count`.                                                    |
+| `include(String column, Query rows)`             | Adds related rows as a JSON array column.                                                    |
+| `includeOne(String column, Query row)`           | Adds the first related row as a JSON object column. Adds `LIMIT 1` to `row`.                 |
+| `includeCount(String column, Query rows)`        | Adds the number of related rows as a column.                                                 |
+| `on(String column, String outerColumn)`          | Relates this query to the enclosing query: `column = outerColumn`.                           |
+| `groupBy(String... columns)`                     | Adds `GROUP BY` columns.                                                                     |
+| `having(Filter filter)`                          | Adds a filter on groups.                                                                     |
+| `orderBy(String column)`                         | Sorts ascending by a table column or a `select` column.                                      |
+| `orderBy(String column, Direction direction)`    | Sorts by a table column or a `select` column.                                                |
+| `orderBy(Expression value, Direction direction)` | Sorts by a value.                                                                            |
+| `limit(long rows)`                               | Limits the number of rows. Must be greater than 0.                                           |
+| `offset(long rows)`                              | Skips rows. Must be 0 or greater.                                                            |
+| `distinct()`                                     | Renders `SELECT DISTINCT`.                                                                   |
+| `lock(LockMode mode)`                            | Locks the rows that the query reads until the transaction ends. See [Dialects](dialects.md). |
+| `union(Combinable other)`                        | Combines with `UNION ALL`.                                                                   |
+| `intersect(Combinable other)`                    | Combines with `INTERSECT`.                                                                   |
+| `except(Combinable other)`                       | Combines with `EXCEPT`.                                                                      |
 
 If you call `select` and also want table columns, list the table columns with `columns`.
 
