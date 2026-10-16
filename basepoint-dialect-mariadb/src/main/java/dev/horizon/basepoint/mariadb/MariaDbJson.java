@@ -79,8 +79,7 @@ record MariaDbJson(Include include) implements Expression {
    * @param offset the number of rows to skip, or {@code null} for none
    */
   record ArrayAgg(Expression value, List<Clause.Sort> sorts, Clause.Limit limit, Clause.Offset offset)
-      implements
-        Expression {
+      implements Expression {
 
     @Override
     public void render(StatementWriter sql) {
