@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/zZHorizonZz/basepoint/compare/v0.2.0...v0.3.0) (2026-10-21)
+
+
+### Features
+
+* filter by a key of a JSON column in AIP-160 text. ([fcd5620](https://github.com/zZHorizonZz/basepoint/commit/fcd5620aad5798d3e46c3c35bae58815666b3aec))
+
 ## [0.2.0](https://github.com/zZHorizonZz/basepoint/compare/v0.1.0...v0.2.0) (2026-10-21)
 
 
