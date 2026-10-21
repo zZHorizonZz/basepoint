@@ -19,7 +19,8 @@ final class Fixture {
 
   private static final String LABELLED = "INSERT INTO labelled (id, labels) VALUES (1, '{\"env\": \"prod\","
       + " \"team\": \"core\"}'), (2, '{\"env\": \"dev\", \"team\": \"web\"}'),"
-      + " (3, '{\"env\": \"prod\", \"app.kubernetes.io/name\": \"shop\"}'), (4, '{}'), (5, NULL)";
+      + " (3, '{\"env\": \"prod\", \"app.kubernetes.io/name\": \"shop\"}'), (4, '{}'), (5, NULL),"
+      + " (6, '{\"replicas\": 3}')";
 
   private static final List<String> ROWS = List.of(
       "INSERT INTO orders (id, state, total, region, note) VALUES (1, 'OPEN', 150, 'EU', NULL),"

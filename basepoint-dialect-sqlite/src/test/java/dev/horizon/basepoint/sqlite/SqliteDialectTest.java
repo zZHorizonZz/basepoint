@@ -25,7 +25,7 @@ class SqliteDialectTest {
   static Stream<Arguments> statements() {
     return Stream.of(
         arguments("json key", ORDERS.query().where(eq(key("labels", "env"), "prod")),
-            "SELECT \"t0\".* FROM \"orders\" AS \"t0\" WHERE (json_extract(\"t0\".\"labels\", ?) = ?)"),
+            "SELECT \"t0\".* FROM \"orders\" AS \"t0\" WHERE (CAST(json_extract(\"t0\".\"labels\", ?) AS TEXT) = ?)"),
         arguments("question marks", ORDERS.query().where(eq("state", "OPEN")),
             "SELECT \"t0\".* FROM \"orders\" AS \"t0\" WHERE (\"t0\".\"state\" = ?)"),
         arguments("no lock", ORDERS.query().lock(LockMode.UPDATE),

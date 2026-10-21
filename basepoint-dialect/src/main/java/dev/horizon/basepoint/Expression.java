@@ -38,7 +38,8 @@ public interface Expression extends Node {
    * {@code ne(key(column, name), null)}.
    *
    * <p>
-   * The value is a string. Each dialect renders it with the JSON functions of its database.
+   * The value is text: a number in the object, such as {@code 5}, is the text {@code "5"}. Each dialect renders it
+   * with the JSON functions of its database.
    *
    * @param column the column name, of a JSON column
    * @param key the key, which is not empty and contains neither {@code "} nor {@code \}, because the databases

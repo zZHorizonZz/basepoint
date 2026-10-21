@@ -61,7 +61,7 @@ such key. Pass it to the methods that take an `Expression`:
 | `ne(key("labels", "env"), null)`   | has `env`                        |
 | `eq(key("labels", "env"), null)`   | has no `env`, or is `NULL`       |
 
-The value is a string. A key must not be empty or contain `"` or `\`. Each dialect renders the key with the JSON
+The value is text: a number in the object, such as `5`, is the text `"5"`. A key must not be empty or contain `"` or `\`. Each dialect renders the key with the JSON
 functions of its database; see [Dialects](dialects.md#differences-by-database).
 
 ## Logic

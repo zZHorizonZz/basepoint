@@ -36,9 +36,11 @@ public interface Filter extends Node {
    * Parses a filter with an aquery parser, for example {@code new CelFilterParser()} for CEL.
    *
    * <p>
-   * Each field must be a single column name. Unquoted values become numbers, booleans or {@code null} when they have
-   * that form, and strings otherwise. Quoted values are strings, and {@code *} inside them matches any text.
-   * {@code column:*} matches rows where the column is not {@code NULL}.
+   * Each field is a column name, or a column name and a key of the JSON object in the column, such as
+   * {@code labels.env}, whose values compare as text. Unquoted values become numbers, booleans or {@code null} when
+   * they have that form, and strings otherwise. Quoted values are strings, and {@code *} inside them matches any text.
+   * {@code column:*} matches rows where the column is not {@code NULL}, and {@code column:key} the rows whose object
+   * has the key.
    *
    * @param text the filter text
    * @param parser the parser

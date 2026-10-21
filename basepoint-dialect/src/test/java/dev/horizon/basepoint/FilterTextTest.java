@@ -1,5 +1,6 @@
 package dev.horizon.basepoint;
 
+import static dev.horizon.basepoint.Expression.key;
 import static dev.horizon.basepoint.Filter.and;
 import static dev.horizon.basepoint.Filter.endsWith;
 import static dev.horizon.basepoint.Filter.eq;
@@ -52,7 +53,13 @@ class FilterTextTest {
         arguments("a = 1 OR b = 2", or(eq("a", 1L), eq("b", 2L))),
         arguments("NOT a = 1", not(eq("a", 1L))),
         arguments("-a = 1", not(eq("a", 1L))),
-        arguments("(a = 1 OR b = 2) AND c = 3", and(or(eq("a", 1L), eq("b", 2L)), eq("c", 3L))));
+        arguments("(a = 1 OR b = 2) AND c = 3", and(or(eq("a", 1L), eq("b", 2L)), eq("c", 3L))),
+        arguments("labels.env = prod", eq(key("labels", "env"), "prod")),
+        arguments("labels.env != prod", ne(key("labels", "env"), "prod")),
+        arguments("labels.env = 5", eq(key("labels", "env"), "5")),
+        arguments("labels.env = \"p*\"", new Filter.Match(key("labels", "env"), List.of("p", ""), false)),
+        arguments("labels.env:*", ne(key("labels", "env"), null)),
+        arguments("labels:env", ne(key("labels", "env"), null)));
   }
 
   @ParameterizedTest(name = "{0}")
@@ -78,8 +85,9 @@ class FilterTextTest {
   @ParameterizedTest(name = "{0}")
   @CsvSource(delimiter = ';', quoteCharacter = '`', textBlock = """
       plain        ; The filter term 'plain' has no column.
-      a.b = 1      ; Unsupported field path 'a.b'. Use a single column name.
-      tags:urgent  ; The has operator supports only 'tags:*'
+      a.b.c = 1      ; Unsupported field path 'a.b.c'.
+      labels.env > 1 ; Unsupported operator '>' on a key of a JSON object
+      labels.env:x   ; A key of a JSON object supports only ':*'
       total > null ; Cannot compare null with >. Use = or != with null.
       """)
   void rejectsUnsupportedFilters(String text, String message) {

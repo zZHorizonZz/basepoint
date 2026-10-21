@@ -99,7 +99,7 @@ On PostgreSQL, this renders:
 SELECT "t0".* FROM "orders" AS "t0" WHERE (("t0"."labels" ->> CAST($1 AS text)) = $2)
 ```
 
-MariaDB and SQL Server render `JSON_VALUE("t0"."labels", ?)`, and SQLite `json_extract("t0"."labels", ?)`, with the
+MariaDB and SQL Server render `JSON_VALUE("t0"."labels", ?)`, and SQLite `CAST(json_extract("t0"."labels", ?) AS TEXT)`, with the
 path `$."env"` bound.
 
 ## Filter by related rows

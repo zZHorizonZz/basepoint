@@ -26,6 +26,11 @@ import java.util.regex.Pattern;
  * <p>
  * Each field becomes a column. An unquoted value becomes a {@code Long}, a {@code BigDecimal}, a {@code Boolean} or
  * {@code null} when its text has that form, and a {@code String} otherwise.
+ *
+ * <p>
+ * A field of two parts, such as {@code labels.env}, becomes the value of a key of the JSON object in a column, as
+ * {@link Expression#key} gives it, and its values compare as text. {@code labels:env} matches the rows whose object has
+ * the key {@code env}, which is how AIP-160 tests a map for a key.
  */
 public final class FilterTranslation {
 
@@ -57,20 +62,22 @@ public final class FilterTranslation {
 
   private Filter restriction(Restriction restriction) {
     List<String> segments = restriction.fieldPath().segments();
-    if (segments.size() != 1) {
-      throw new InvalidFilterException("Unsupported field path '%s'. Use a single column name.",
-          String.join(".", segments));
-    }
-    Expression column = Expression.column(segments.getFirst());
     Operator operator = restriction.operator();
     dev.horizon.aquery.aip160.Filter.Value value = restriction.value();
+    if (segments.size() == 2) {
+      return keyed(key(segments.getFirst(), segments.get(1)), operator, value);
+    }
+    if (segments.size() != 1) {
+      throw new InvalidFilterException("Unsupported field path '%s'. Use a column name, or a column and a key of the"
+          + " JSON object in it, for example labels.env.", String.join(".", segments));
+    }
+    Expression column = Expression.column(segments.getFirst());
     return switch (operator) {
       case HAS -> {
         if (value instanceof Text text && text.text().equals("*")) {
           yield new Filter.IsNull(column, true);
         }
-        throw new InvalidFilterException("Unsupported filter '%s:%s'. The has operator supports only '%s:*', which"
-            + " matches rows where the column is not null.", segments.getFirst(), value.input(), segments.getFirst());
+        yield new Filter.IsNull(key(segments.getFirst(), string(value)), true);
       }
       case STARTS_WITH -> new Filter.Match(column, List.of(string(value), ""), false);
       case ENDS_WITH -> new Filter.Match(column, List.of("", string(value)), false);
@@ -81,6 +88,38 @@ public final class FilterTranslation {
       case GREATER_EQUALS -> ordered(column, ">=", value);
       default -> throw new InvalidFilterException("Unsupported operator '%s'.", operator.symbol());
     };
+  }
+
+  /** Translates a restriction on the value of a key of a JSON object, which compares as text. */
+  private Filter keyed(Expression key, Operator operator, dev.horizon.aquery.aip160.Filter.Value value) {
+    return switch (operator) {
+      case HAS -> {
+        if (value instanceof Text text && text.text().equals("*")) {
+          yield new Filter.IsNull(key, true);
+        }
+        throw new InvalidFilterException("Unsupported filter '%s'. A key of a JSON object supports only ':*', which"
+            + " matches rows whose object has the key.", value.input());
+      }
+      case STARTS_WITH -> new Filter.Match(key, List.of(string(value), ""), false);
+      case ENDS_WITH -> new Filter.Match(key, List.of("", string(value)), false);
+      case EQUALS, NOT_EQUALS -> {
+        boolean negated = operator == Operator.NOT_EQUALS;
+        if (value instanceof StringLiteral string && string.wildcards() && string.value().contains("*")) {
+          yield new Filter.Match(key, List.of(string.value().split("\\*", -1)), negated);
+        }
+        yield new Filter.Compare(key, negated ? "<>" : "=", Expression.value(string(value)));
+      }
+      default -> throw new InvalidFilterException("Unsupported operator '%s' on a key of a JSON object, whose values"
+          + " compare only as text.", operator.symbol());
+    };
+  }
+
+  private Expression key(String column, String key) {
+    try {
+      return Expression.key(column, key);
+    } catch (IllegalArgumentException invalid) {
+      throw new InvalidFilterException("Unsupported key '%s' of the column %s. %s", key, column, invalid.getMessage());
+    }
   }
 
   private Filter equality(Expression column, boolean negated, dev.horizon.aquery.aip160.Filter.Value value) {
