@@ -37,4 +37,9 @@ final class SqliteTestDatabase implements TestDatabase {
   public boolean includesWholeRows() {
     return false;
   }
+
+  @Override
+  public String jsonType() {
+    return "TEXT";
+  }
 }

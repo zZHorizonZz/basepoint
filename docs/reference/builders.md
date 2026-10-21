@@ -116,13 +116,14 @@ A later assignment to the same column replaces the earlier one.
 
 ## `Expression`
 
-| Method          | SQL                    |
-| --------------- | ---------------------- |
-| `column(name)`  | `"t0"."name"`          |
-| `value(value)`  | A placeholder          |
-| `count()`       | `COUNT(*)`             |
-| `count(column)` | `COUNT("t0"."column")` |
-| `sum(column)`   | `SUM("t0"."column")`   |
-| `avg(column)`   | `AVG("t0"."column")`   |
-| `min(column)`   | `MIN("t0"."column")`   |
-| `max(column)`   | `MAX("t0"."column")`   |
+| Method             | SQL                                                                                       |
+| ------------------ | ----------------------------------------------------------------------------------------- |
+| `column(name)`     | `"t0"."name"`                                                                             |
+| `value(value)`     | A placeholder                                                                             |
+| `key(column, key)` | The value of a key of the JSON object in the column. See [Filters](filters.md#json-keys). |
+| `count()`          | `COUNT(*)`                                                                                |
+| `count(column)`    | `COUNT("t0"."column")`                                                                    |
+| `sum(column)`      | `SUM("t0"."column")`                                                                      |
+| `avg(column)`      | `AVG("t0"."column")`                                                                      |
+| `min(column)`      | `MIN("t0"."column")`                                                                      |
+| `max(column)`      | `MAX("t0"."column")`                                                                      |

@@ -142,6 +142,13 @@ To test another server version, set its image with a system property:
 
 For example: `mvn verify -Dbasepoint.test.mariadb.image=mariadb:11.4`.
 
+## Planned
+
+- **Options of one dialect.** A way to ask for SQL that only one database has, such as PostgreSQL's `@>` for the
+  value of a JSON key, which a GIN index answers. Today `Expression.key` renders `->>` on PostgreSQL, and no index
+  answers that on any database. The GIN index itself would come from [Leadseal](https://github.com/zZHorizonZz/leadseal),
+  which cannot declare an index method yet.
+
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE).

@@ -1,5 +1,6 @@
 package dev.horizon.basepoint.postgres;
 
+import static dev.horizon.basepoint.Expression.key;
 import static dev.horizon.basepoint.Filter.eq;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -22,6 +23,8 @@ class PostgresDialectTest {
 
   static Stream<Arguments> statements() {
     return Stream.of(
+        arguments("json key", ORDERS.query().where(eq(key("labels", "env"), "prod")),
+            "SELECT \"t0\".* FROM \"orders\" AS \"t0\" WHERE ((\"t0\".\"labels\" ->> CAST($1 AS text)) = $2)"),
         arguments("dollar placeholders", ORDERS.query().where(eq("state", "OPEN")),
             "SELECT \"t0\".* FROM \"orders\" AS \"t0\" WHERE (\"t0\".\"state\" = $1)"),
         arguments("quotes in names", DIALECT.collection("a\"b").query(),

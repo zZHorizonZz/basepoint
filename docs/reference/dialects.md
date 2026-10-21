@@ -29,24 +29,25 @@ Each dialect class has a `NAME` constant with the database name, for example `Ma
 
 ## Differences by database
 
-| Feature                     | PostgreSQL               | MariaDB                                               | SQL Server                             | SQLite                                              |
-| --------------------------- | ------------------------ | ----------------------------------------------------- | -------------------------------------- | --------------------------------------------------- |
-| Limit                       | `LIMIT n`                | `LIMIT n`                                             | `SELECT TOP (n)`                       | `LIMIT n`                                           |
-| Offset                      | `OFFSET m`               | `LIMIT 18446744073709551615 OFFSET m` without a limit | `OFFSET m ROWS FETCH NEXT n ROWS ONLY` | `LIMIT -1 OFFSET m` without a limit                 |
-| Offset without `orderBy`    | Allowed                  | Allowed                                               | Adds `ORDER BY (SELECT NULL)`          | Allowed                                             |
-| Returned rows               | `RETURNING`              | `RETURNING`                                           | `OUTPUT INSERTED` or `OUTPUT DELETED`  | `RETURNING`                                         |
-| Returned rows of an update  | Supported                | MariaDB 13.0 and later                                | Supported                              | Supported                                           |
-| Upsert                      | `ON CONFLICT`            | `ON DUPLICATE KEY UPDATE`                             | `MERGE ... WITH (HOLDLOCK)`            | `ON CONFLICT`                                       |
-| Upsert key                  | The columns you pass     | Any unique key of the table                           | The columns you pass                   | The columns you pass                                |
-| Default row                 | `DEFAULT VALUES`         | `() VALUES ()`                                        | `DEFAULT VALUES`                       | `DEFAULT VALUES`                                    |
-| Include function            | `jsonb_agg`, `to_jsonb`  | `JSON_ARRAYAGG`, `JSON_OBJECT`                        | `FOR JSON PATH`                        | `json_group_array`, `json_object`                   |
-| Include without `columns`   | Supported                | Not supported                                         | Supported                              | Not supported                                       |
-| Include size limit          | None                     | `group_concat_max_len`, 1 MB by default               | None                                   | None                                                |
-| `INTERSECT`, `EXCEPT`       | Supported                | Supported                                             | Supported                              | Supported                                           |
-| Share lock                  | `FOR SHARE`              | `LOCK IN SHARE MODE`                                  | `WITH (HOLDLOCK, ROWLOCK)`             | None. A transaction that writes locks the database. |
-| Update lock                 | `FOR UPDATE`             | `FOR UPDATE`                                          | `WITH (UPDLOCK, ROWLOCK)`              | None                                                |
-| Lock that skips locked rows | `FOR UPDATE SKIP LOCKED` | `FOR UPDATE SKIP LOCKED`                              | `WITH (UPDLOCK, ROWLOCK, READPAST)`    | None                                                |
-| Lock that does not wait     | `FOR UPDATE NOWAIT`      | `FOR UPDATE NOWAIT`                                   | `WITH (UPDLOCK, ROWLOCK, NOWAIT)`      | None                                                |
+| Feature                     | PostgreSQL                   | MariaDB                                               | SQL Server                             | SQLite                                              |
+| --------------------------- | ---------------------------- | ----------------------------------------------------- | -------------------------------------- | --------------------------------------------------- |
+| Limit                       | `LIMIT n`                    | `LIMIT n`                                             | `SELECT TOP (n)`                       | `LIMIT n`                                           |
+| Offset                      | `OFFSET m`                   | `LIMIT 18446744073709551615 OFFSET m` without a limit | `OFFSET m ROWS FETCH NEXT n ROWS ONLY` | `LIMIT -1 OFFSET m` without a limit                 |
+| Offset without `orderBy`    | Allowed                      | Allowed                                               | Adds `ORDER BY (SELECT NULL)`          | Allowed                                             |
+| Returned rows               | `RETURNING`                  | `RETURNING`                                           | `OUTPUT INSERTED` or `OUTPUT DELETED`  | `RETURNING`                                         |
+| Returned rows of an update  | Supported                    | MariaDB 13.0 and later                                | Supported                              | Supported                                           |
+| Upsert                      | `ON CONFLICT`                | `ON DUPLICATE KEY UPDATE`                             | `MERGE ... WITH (HOLDLOCK)`            | `ON CONFLICT`                                       |
+| Upsert key                  | The columns you pass         | Any unique key of the table                           | The columns you pass                   | The columns you pass                                |
+| Default row                 | `DEFAULT VALUES`             | `() VALUES ()`                                        | `DEFAULT VALUES`                       | `DEFAULT VALUES`                                    |
+| Include function            | `jsonb_agg`, `to_jsonb`      | `JSON_ARRAYAGG`, `JSON_OBJECT`                        | `FOR JSON PATH`                        | `json_group_array`, `json_object`                   |
+| Include without `columns`   | Supported                    | Not supported                                         | Supported                              | Not supported                                       |
+| Value of a JSON key         | `column ->> CAST(? AS text)` | `JSON_VALUE(column, ?)`                               | `JSON_VALUE(column, ?)`                | `json_extract(column, ?)`                           |
+| Include size limit          | None                         | `group_concat_max_len`, 1 MB by default               | None                                   | None                                                |
+| `INTERSECT`, `EXCEPT`       | Supported                    | Supported                                             | Supported                              | Supported                                           |
+| Share lock                  | `FOR SHARE`                  | `LOCK IN SHARE MODE`                                  | `WITH (HOLDLOCK, ROWLOCK)`             | None. A transaction that writes locks the database. |
+| Update lock                 | `FOR UPDATE`                 | `FOR UPDATE`                                          | `WITH (UPDLOCK, ROWLOCK)`              | None                                                |
+| Lock that skips locked rows | `FOR UPDATE SKIP LOCKED`     | `FOR UPDATE SKIP LOCKED`                              | `WITH (UPDLOCK, ROWLOCK, READPAST)`    | None                                                |
+| Lock that does not wait     | `FOR UPDATE NOWAIT`          | `FOR UPDATE NOWAIT`                                   | `WITH (UPDLOCK, ROWLOCK, NOWAIT)`      | None                                                |
 
 When a feature is not supported, `build()` throws `UnsupportedOperationException`. MariaDB 11.4 is an exception:
 it rejects `UPDATE ... RETURNING` when you run the statement.
@@ -57,10 +58,10 @@ Each dialect returns its decorators from `decorator()`. The decorators run in th
 
 | Dialect            | Decorators                                                                                                                                                       |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PostgresDialect`  | `Include` to `PostgresJson`                                                                                                                                      |
+| `PostgresDialect`  | `Include` to `PostgresJson`, `JsonKey` to `PostgresJsonKey`                                                                                                      |
 | `MariaDbDialect`   | `MariaDbLimits`, `OnConflict` to `MariaDbOnDuplicateKey`, `DefaultValues` to `MariaDbEmptyRow`, `Include` to `MariaDbJson`, a share `Lock` to `MariaDbShareLock` |
 | `SqlServerDialect` | `SqlServerLock`, `SqlServerMerge`, `SqlServerOutput`, `SqlServerPaging`, `Include` to `SqlServerJson`                                                            |
-| `SqliteDialect`    | `SqliteLimits`, `Include` to `SqliteJson`, removal of `Lock`                                                                                                     |
+| `SqliteDialect`    | `SqliteLimits`, `Include` to `SqliteJson`, `JsonKey` to `SqliteJsonKey`, removal of `Lock`                                                                       |
 
 To add your own decorator, see [Add a decorator](../how-to/add-a-decorator.md).
 

@@ -82,6 +82,26 @@ orders.query().where(like("sku", "M%"));
 Case sensitivity depends on the collation of the column. For example, MariaDB and SQL Server compare text without
 case by default.
 
+## Filter by a key of a JSON column
+
+Use `Expression.key` for the value of a key of the JSON object in a column:
+
+```java
+import static dev.horizon.basepoint.Expression.key;
+
+orders.query().where(eq(key("labels", "env"), "prod"));   // labels has env = "prod"
+orders.query().where(ne(key("labels", "env"), null));     // labels has the key env
+```
+
+On PostgreSQL, this renders:
+
+```sql
+SELECT "t0".* FROM "orders" AS "t0" WHERE (("t0"."labels" ->> CAST($1 AS text)) = $2)
+```
+
+MariaDB and SQL Server render `JSON_VALUE("t0"."labels", ?)`, and SQLite `json_extract("t0"."labels", ?)`, with the
+path `$."env"` bound.
+
 ## Filter by related rows
 
 Use `exists` or `notExists` with a query of the related table. Call `on` to relate the subquery to the current row:
@@ -100,4 +120,5 @@ WHERE EXISTS (SELECT 1 FROM "items" AS "t1" WHERE (("t1"."order_id" = "t0"."id")
 ## Related pages
 
 - [Filters](../reference/filters.md)
+- [Dialects](../reference/dialects.md)
 - [Filter text syntax](../reference/filter-text-syntax.md)

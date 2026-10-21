@@ -1,5 +1,6 @@
 package dev.horizon.basepoint;
 
+import static dev.horizon.basepoint.Expression.key;
 import static dev.horizon.basepoint.Filter.eq;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -41,6 +42,12 @@ class ValidationTest {
             IllegalStateException.class, "The update has no filter."),
         arguments("delete without filter", call(() -> ORDERS.delete().build()), IllegalStateException.class,
             "The delete has no filter."),
+        arguments("empty json key", call(() -> key("labels", "")), IllegalArgumentException.class,
+            "A JSON key must not be empty"),
+        arguments("json key with a quote", call(() -> key("labels", "a\"b")), IllegalArgumentException.class,
+            "A JSON key must not be empty or contain"),
+        arguments("json key with a backslash", call(() -> key("labels", "a\\b")), IllegalArgumentException.class,
+            "A JSON key must not be empty or contain"),
         arguments("on in a top-level query", call(() -> ORDERS.query().on("id", "id").build()),
             IllegalStateException.class, "Use on() only in a query"));
   }

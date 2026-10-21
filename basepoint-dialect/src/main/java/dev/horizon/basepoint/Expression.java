@@ -33,6 +33,24 @@ public interface Expression extends Node {
   }
 
   /**
+   * Returns the value of a key of the JSON object in a column, or {@code NULL} if the object has no such key. Compare
+   * it with {@link Filter#eq(Expression, Object)}, and match the rows whose object has the key with
+   * {@code ne(key(column, name), null)}.
+   *
+   * <p>
+   * The value is a string. Each dialect renders it with the JSON functions of its database.
+   *
+   * @param column the column name, of a JSON column
+   * @param key the key, which is not empty and contains neither {@code "} nor {@code \}, because the databases
+   * escape those differently in a path
+   * @return the expression
+   * @throws IllegalArgumentException if the key is empty or contains {@code "} or {@code \}
+   */
+  static Expression key(String column, String key) {
+    return new JsonKey(column, key);
+  }
+
+  /**
    * Returns {@code COUNT(*)}.
    *
    * @return the expression
@@ -101,6 +119,36 @@ public interface Expression extends Node {
     @Override
     public void render(StatementWriter sql) {
       sql.column(name);
+    }
+  }
+
+  /**
+   * The value of a key of the JSON object in a column. It renders as the standard {@code JSON_VALUE(column, ?)}, with
+   * the path of the key bound. Dialects whose database has no {@code JSON_VALUE} decorate it.
+   *
+   * @param column the column name
+   * @param key the key
+   */
+  record JsonKey(String column, String key) implements Expression {
+
+    public JsonKey {
+      if (key.isEmpty() || key.contains("\"") || key.contains("\\")) {
+        throw new IllegalArgumentException("A JSON key must not be empty or contain \" or \\, but is " + key + ".");
+      }
+    }
+
+    @Override
+    public void render(StatementWriter sql) {
+      sql.append("JSON_VALUE(").column(column).append(", ").param(path()).append(")");
+    }
+
+    /**
+     * Returns the path of the key, for example {@code $."env"}.
+     *
+     * @return the path
+     */
+    public String path() {
+      return "$.\"" + key + "\"";
     }
   }
 

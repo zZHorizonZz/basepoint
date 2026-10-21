@@ -1,6 +1,7 @@
 package dev.horizon.basepoint;
 
 import static dev.horizon.basepoint.Expression.column;
+import static dev.horizon.basepoint.Expression.key;
 import static dev.horizon.basepoint.Expression.sum;
 import static dev.horizon.basepoint.Filter.and;
 import static dev.horizon.basepoint.Filter.contains;
@@ -56,6 +57,9 @@ class RenderingTest {
             List.of("%50!%!_%")),
         arguments("column to column", ITEMS.query().where(gt("qty", column("min_qty"))),
             "SELECT \"t0\".* FROM \"items\" AS \"t0\" WHERE (\"t0\".\"qty\" > \"t0\".\"min_qty\")", List.of()),
+        arguments("json key", ORDERS.query().where(eq(key("labels", "env"), "prod")),
+            "SELECT \"t0\".* FROM \"orders\" AS \"t0\" WHERE (JSON_VALUE(\"t0\".\"labels\", ?) = ?)",
+            List.of("$.\"env\"", "prod")),
         arguments("exists", ORDERS.query().where(exists(ITEMS.query().on("order_id", "id"))),
             "SELECT \"t0\".* FROM \"orders\" AS \"t0\" WHERE EXISTS (SELECT 1 FROM \"items\" AS \"t1\""
                 + " WHERE (\"t1\".\"order_id\" = \"t0\".\"id\"))",

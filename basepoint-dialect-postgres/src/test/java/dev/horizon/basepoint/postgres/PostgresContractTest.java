@@ -7,6 +7,7 @@ import dev.horizon.basepoint.contract.DeleteContractTest;
 import dev.horizon.basepoint.contract.FilterContractTest;
 import dev.horizon.basepoint.contract.IncludeContractTest;
 import dev.horizon.basepoint.contract.InsertContractTest;
+import dev.horizon.basepoint.contract.JsonContractTest;
 import dev.horizon.basepoint.contract.LockContractTest;
 import dev.horizon.basepoint.contract.PagingContractTest;
 import dev.horizon.basepoint.contract.TestDatabase;
@@ -120,6 +121,15 @@ class PostgresContractTest {
 
   @Nested
   class Decorator extends DecoratorContractTest {
+
+    @Override
+    protected TestDatabase database() {
+      return DATABASE;
+    }
+  }
+
+  @Nested
+  class Json extends JsonContractTest {
 
     @Override
     protected TestDatabase database() {

@@ -1,5 +1,6 @@
 package dev.horizon.basepoint.sqlite;
 
+import static dev.horizon.basepoint.Expression.key;
 import static dev.horizon.basepoint.Filter.eq;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -23,6 +24,8 @@ class SqliteDialectTest {
 
   static Stream<Arguments> statements() {
     return Stream.of(
+        arguments("json key", ORDERS.query().where(eq(key("labels", "env"), "prod")),
+            "SELECT \"t0\".* FROM \"orders\" AS \"t0\" WHERE (json_extract(\"t0\".\"labels\", ?) = ?)"),
         arguments("question marks", ORDERS.query().where(eq("state", "OPEN")),
             "SELECT \"t0\".* FROM \"orders\" AS \"t0\" WHERE (\"t0\".\"state\" = ?)"),
         arguments("no lock", ORDERS.query().lock(LockMode.UPDATE),

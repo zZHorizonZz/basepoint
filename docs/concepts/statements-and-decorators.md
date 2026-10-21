@@ -12,7 +12,7 @@ standard SQL. These types are nodes:
 | ------------ | ---------------------------------------------------------------------------------- |
 | `Statement`  | A SELECT, INSERT, UPDATE or DELETE                                                 |
 | `Clause`     | `Select`, `From`, `Where`, `OrderBy`, `Limit`, `InsertInto`, `Values`, `Returning` |
-| `Expression` | `Column`, `Value`, `Aggregate`, `Subquery`, `Include`                              |
+| `Expression` | `Column`, `Value`, `Aggregate`, `Subquery`, `Include`, `JsonKey`                   |
 | `Filter`     | `Compare`, `In`, `And`, `Exists`                                                   |
 
 ## Statements

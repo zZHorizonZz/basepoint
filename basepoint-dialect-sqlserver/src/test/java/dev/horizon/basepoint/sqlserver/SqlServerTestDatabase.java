@@ -38,4 +38,9 @@ final class SqlServerTestDatabase implements TestDatabase {
   public boolean includesWholeRows() {
     return true;
   }
+
+  @Override
+  public String jsonType() {
+    return "NVARCHAR(MAX)";
+  }
 }

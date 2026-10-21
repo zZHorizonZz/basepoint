@@ -48,6 +48,22 @@ pattern.
 
 Case sensitivity depends on the collation of the column.
 
+## JSON keys
+
+`Expression.key(column, key)` is the value of a key of the JSON object in a column, or `NULL` if the object has no
+such key. Pass it to the methods that take an `Expression`:
+
+| Filter                             | Matches the rows whose object    |
+| ---------------------------------- | -------------------------------- |
+| `eq(key("labels", "env"), "prod")` | has `env` with the value `prod`  |
+| `ne(key("labels", "env"), "prod")` | has `env` with another value     |
+| `in(key("labels", "env"), values)` | has `env` with one of the values |
+| `ne(key("labels", "env"), null)`   | has `env`                        |
+| `eq(key("labels", "env"), null)`   | has no `env`, or is `NULL`       |
+
+The value is a string. A key must not be empty or contain `"` or `\`. Each dialect renders the key with the JSON
+functions of its database; see [Dialects](dialects.md#differences-by-database).
+
 ## Logic
 
 | Method            | SQL         | With no filters |

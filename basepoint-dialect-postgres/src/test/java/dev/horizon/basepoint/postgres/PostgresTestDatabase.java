@@ -37,4 +37,9 @@ final class PostgresTestDatabase implements TestDatabase {
   public boolean includesWholeRows() {
     return true;
   }
+
+  @Override
+  public String jsonType() {
+    return "JSONB";
+  }
 }

@@ -33,6 +33,7 @@ public abstract class ContractTest {
   protected CollectionReference products;
   protected CollectionReference archived;
   protected CollectionReference defaults;
+  protected CollectionReference labelled;
   private Connection connection;
 
   protected abstract TestDatabase database();
@@ -47,6 +48,7 @@ public abstract class ContractTest {
     products = dialect.collection("products");
     archived = dialect.collection("archived");
     defaults = dialect.collection("defaults");
+    labelled = dialect.collection("labelled");
   }
 
   @AfterAll
@@ -58,7 +60,7 @@ public abstract class ContractTest {
 
   @BeforeEach
   void loadFixture() throws SQLException {
-    Fixture.load(connection);
+    Fixture.load(connection, database.jsonType());
   }
 
   protected List<Integer> ids(Query query) throws SQLException {

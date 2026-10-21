@@ -1,5 +1,6 @@
 package dev.horizon.basepoint.sqlserver;
 
+import static dev.horizon.basepoint.Expression.key;
 import static dev.horizon.basepoint.Filter.eq;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -23,6 +24,8 @@ class SqlServerDialectTest {
 
   static Stream<Arguments> statements() {
     return Stream.of(
+        arguments("json key", ORDERS.query().where(eq(key("labels", "env"), "prod")),
+            "SELECT [t0].* FROM [orders] AS [t0] WHERE (JSON_VALUE([t0].[labels], @p1) = @p2)"),
         arguments("brackets and at-p placeholders", ORDERS.query().where(eq("state", "OPEN")),
             "SELECT [t0].* FROM [orders] AS [t0] WHERE ([t0].[state] = @p1)"),
         arguments("brackets in names", DIALECT.collection("a]b").query(),

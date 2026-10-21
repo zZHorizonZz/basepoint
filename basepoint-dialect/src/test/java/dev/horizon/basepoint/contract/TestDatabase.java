@@ -13,4 +13,6 @@ public interface TestDatabase {
   boolean returnsUpdatedRows() throws SQLException;
 
   boolean includesWholeRows();
+
+  String jsonType();
 }

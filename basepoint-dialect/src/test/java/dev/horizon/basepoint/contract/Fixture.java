@@ -7,7 +7,7 @@ import java.util.List;
 
 final class Fixture {
 
-  private static final List<String> TABLES = List.of("items", "orders", "products", "archived", "defaults");
+  private static final List<String> TABLES = List.of("items", "orders", "products", "archived", "defaults", "labelled");
 
   private static final List<String> SCHEMA = List.of(
       "CREATE TABLE orders (id INT PRIMARY KEY, state VARCHAR(20) NOT NULL, total INT NOT NULL,"
@@ -16,6 +16,10 @@ final class Fixture {
       "CREATE TABLE products (sku VARCHAR(20) PRIMARY KEY, name VARCHAR(50) NOT NULL)",
       "CREATE TABLE archived (id INT PRIMARY KEY, state VARCHAR(20) NOT NULL)",
       "CREATE TABLE defaults (id INT NOT NULL DEFAULT 7, label VARCHAR(10) NOT NULL DEFAULT 'x')");
+
+  private static final String LABELLED = "INSERT INTO labelled (id, labels) VALUES (1, '{\"env\": \"prod\","
+      + " \"team\": \"core\"}'), (2, '{\"env\": \"dev\", \"team\": \"web\"}'),"
+      + " (3, '{\"env\": \"prod\", \"app.kubernetes.io/name\": \"shop\"}'), (4, '{}'), (5, NULL)";
 
   private static final List<String> ROWS = List.of(
       "INSERT INTO orders (id, state, total, region, note) VALUES (1, 'OPEN', 150, 'EU', NULL),"
@@ -29,7 +33,7 @@ final class Fixture {
   private Fixture() {
   }
 
-  static void load(Connection connection) throws SQLException {
+  static void load(Connection connection, String jsonType) throws SQLException {
     try (Statement statement = connection.createStatement()) {
       for (String table : TABLES) {
         statement.execute("DROP TABLE IF EXISTS " + table);
@@ -40,6 +44,8 @@ final class Fixture {
       for (String sql : ROWS) {
         statement.execute(sql);
       }
+      statement.execute("CREATE TABLE labelled (id INT PRIMARY KEY, labels " + jsonType + ")");
+      statement.execute(LABELLED);
     }
   }
 }
