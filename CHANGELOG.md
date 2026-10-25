@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/zZHorizonZz/basepoint/compare/v0.3.0...v0.3.1) (2026-10-25)
+
+
+### Fixes
+
+* depend on aquery 0.3.0, not a snapshot of it. ([13ccbf8](https://github.com/zZHorizonZz/basepoint/commit/13ccbf8100d854eeff1e34c46b59d30caeba0eeb))
+
 ## [0.3.0](https://github.com/zZHorizonZz/basepoint/compare/v0.2.0...v0.3.0) (2026-10-21)
 
 
