@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import dev.horizon.aquery.InvalidQueryException;
-import dev.horizon.aquery.cel.CelFilterParser;
+import dev.horizon.aquery.cel.filter.CelFilterParser;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Stream;
