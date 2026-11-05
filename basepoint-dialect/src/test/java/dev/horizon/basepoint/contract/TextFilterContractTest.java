@@ -2,7 +2,7 @@ package dev.horizon.basepoint.contract;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.horizon.aquery.cel.CelFilterParser;
+import dev.horizon.aquery.cel.filter.CelFilterParser;
 import dev.horizon.basepoint.Filter;
 import java.sql.SQLException;
 import java.util.Arrays;
