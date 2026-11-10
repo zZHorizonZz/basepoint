@@ -33,7 +33,7 @@ In this guide, you add Basepoint for PostgreSQL to a Maven project, build a quer
      <dependency>
        <groupId>dev.horizon</groupId>
        <artifactId>basepoint-dialect-postgres</artifactId>
-       <version>0.4.0</version>
+       <version>0.4.1-SNAPSHOT</version>
      </dependency>
    </dependencies>
    ```
