@@ -13,6 +13,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 public abstract class DurationContractTest extends ContractTest {
@@ -29,26 +30,30 @@ public abstract class DurationContractTest extends ContractTest {
   }
 
   @Test
-  void findsTheRowsOfTheLastWeek() throws SQLException {
+  @DisplayName("Finds the rows of the last week")
+  void lastWeek() throws SQLException {
     assertThat(ids(events.query().columns("id").where(gt("happened", subtract(now(), Duration.ofDays(7))))))
         .containsExactly(1, 3, 4);
   }
 
   @Test
-  void findsTheRowsBeforeAndAfterATime() throws SQLException {
+  @DisplayName("Finds the rows before and after a time")
+  void beforeAndAfter() throws SQLException {
     assertThat(ids(events.query().columns("id").where(lt("happened", now())))).containsExactly(1, 2, 4);
     assertThat(ids(events.query().columns("id").where(gt("happened", add(now(), Duration.ofHours(1))))))
         .containsExactly(3);
   }
 
   @Test
-  void movesByMoreThanTheRangeOfAMicrosecondCount() throws SQLException {
+  @DisplayName("Moves a timestamp by more than an int of microseconds holds")
+  void moveFar() throws SQLException {
     assertThat(ids(events.query().columns("id").where(gt("happened", subtract(now(), Duration.ofDays(400))))))
         .containsExactly(1, 2, 3, 4);
   }
 
   @Test
-  void movesByPartsOfASecond() throws SQLException {
+  @DisplayName("Moves a timestamp by parts of a second")
+  void moveFraction() throws SQLException {
     assertThat(ids(events.query().columns("id").where(gt(add(now(), Duration.ofMillis(1500)), add(now(), Duration
         .ofSeconds(1)))))).containsExactly(1, 2, 3, 4);
     assertThat(ids(events.query().columns("id").where(gt(add(now(), Duration.ofMillis(500)), add(now(), Duration

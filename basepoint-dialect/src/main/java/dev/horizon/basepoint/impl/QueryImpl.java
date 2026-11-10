@@ -40,7 +40,7 @@ public final class QueryImpl implements Query {
 
   public QueryImpl(Dialect dialect, String table) {
     this(dialect, table, new Steps(List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),
-        List.of(), false, null, null, null));
+        List.of(), false, null, null, null, List.of()));
   }
 
   /**
@@ -61,62 +61,70 @@ public final class QueryImpl implements Query {
    */
   private record Steps(List<String> columns, List<Named> values, List<Named> includes, List<Filter> on,
       List<Filter> filters, List<String> groupBy, List<Filter> having, List<Order> order, boolean distinct, Long limit,
-      Long offset, LockMode lock) {
+      Long offset, LockMode lock, List<Clause.WithQuery> queries) {
 
     Steps withColumns(List<String> more) {
       return new Steps(append(columns, more), values, includes, on, filters, groupBy, having, order, distinct, limit,
-          offset, lock);
+          offset, lock, queries);
     }
 
     Steps withValue(Named value) {
       return new Steps(columns, append(values, List.of(value)), includes, on, filters, groupBy, having, order,
-          distinct, limit, offset, lock);
+          distinct, limit, offset, lock, queries);
     }
 
     Steps withInclude(Named include) {
       return new Steps(columns, values, append(includes, List.of(include)), on, filters, groupBy, having, order,
-          distinct, limit, offset, lock);
+          distinct, limit, offset, lock, queries);
     }
 
     Steps withOn(Filter related) {
       return new Steps(columns, values, includes, append(on, List.of(related)), filters, groupBy, having, order,
-          distinct, limit, offset, lock);
+          distinct, limit, offset, lock, queries);
     }
 
     Steps withFilter(Filter filter) {
       return new Steps(columns, values, includes, on, append(filters, List.of(filter)), groupBy, having, order,
-          distinct, limit, offset, lock);
+          distinct, limit, offset, lock, queries);
     }
 
     Steps withGroupBy(List<String> more) {
       return new Steps(columns, values, includes, on, filters, append(groupBy, more), having, order, distinct, limit,
-          offset, lock);
+          offset, lock, queries);
     }
 
     Steps withHaving(Filter filter) {
       return new Steps(columns, values, includes, on, filters, groupBy, append(having, List.of(filter)), order,
-          distinct, limit, offset, lock);
+          distinct, limit, offset, lock, queries);
     }
 
     Steps withOrder(Order more) {
       return new Steps(columns, values, includes, on, filters, groupBy, having, append(order, List.of(more)),
-          distinct, limit, offset, lock);
+          distinct, limit, offset, lock, queries);
     }
 
     Steps withDistinct() {
-      return new Steps(columns, values, includes, on, filters, groupBy, having, order, true, limit, offset, lock);
+      return new Steps(columns, values, includes, on, filters, groupBy, having, order, true, limit, offset, lock, queries);
     }
 
     Steps withLimit(Long rows) {
-      return new Steps(columns, values, includes, on, filters, groupBy, having, order, distinct, rows, offset, lock);
+      return new Steps(columns, values, includes, on, filters, groupBy, having, order, distinct, rows, offset, lock, queries);
     }
 
     Steps withOffset(Long rows) {
-      return new Steps(columns, values, includes, on, filters, groupBy, having, order, distinct, limit, rows, lock);
+      return new Steps(columns, values, includes, on, filters, groupBy, having, order, distinct, limit, rows, lock, queries);
     }
 
     Steps withLock(LockMode mode) {
-      return new Steps(columns, values, includes, on, filters, groupBy, having, order, distinct, limit, offset, mode);
+      return new Steps(columns, values, includes, on, filters, groupBy, having, order, distinct, limit, offset, mode, queries);
+    }
+
+    Steps withQuery(Clause.WithQuery query) {
+      if (queries.stream().anyMatch(other -> other.name().equals(query.name()))) {
+        throw new IllegalArgumentException("The query has two WITH queries named " + query.name() + ".");
+      }
+      return new Steps(columns, values, includes, on, filters, groupBy, having, order, distinct, limit, offset, lock,
+          append(queries, List.of(query)));
     }
 
     private static <T> List<T> append(List<T> list, List<T> items) {
@@ -183,6 +191,19 @@ public final class QueryImpl implements Query {
   public Query includeOne(String column, Query row) {
     return with(steps.withInclude(new Named(column,
         new Include(Include.Shape.ONE, related(row.limit(1)).statement()))));
+  }
+
+  @Override
+  public Query with(String name, Combinable rows) {
+    Statement statement = switch (rows) {
+      case QueryImpl query when !query.steps.on().isEmpty() -> throw new IllegalArgumentException("The WITH query "
+          + name + " relates its rows with on(), but a WITH query has no enclosing row. Leave out on().");
+      case QueryImpl query -> query.derived();
+      case CompoundQueryImpl compound -> compound.statement();
+      default -> throw new IllegalArgumentException("The rows of a WITH query must be a query or a compound query"
+          + " from this library, but are " + rows.getClass().getName() + ".");
+    };
+    return with(steps.withQuery(new Clause.WithQuery(name, statement)));
   }
 
   @Override
@@ -290,7 +311,7 @@ public final class QueryImpl implements Query {
    * @return the statement
    */
   public Statement derived() {
-    return statement(false);
+    return nested().statement(false);
   }
 
   /**
@@ -334,6 +355,9 @@ public final class QueryImpl implements Query {
     steps.includes().forEach(include -> columns.add(new Expression.As(include.value(), include.name())));
 
     List<Clause> clauses = new ArrayList<>();
+    if (!steps.queries().isEmpty()) {
+      clauses.add(new Clause.With(steps.queries()));
+    }
     clauses.add(new Clause.Select(steps.distinct(), columns));
     clauses.add(new Clause.From());
     where().ifPresent(clauses::add);
@@ -396,6 +420,15 @@ public final class QueryImpl implements Query {
     if (!(rows instanceof QueryImpl query)) {
       throw new IllegalArgumentException("The related rows must be a query from a collection.");
     }
-    return query;
+    return query.nested();
+  }
+
+  /** Returns this query, which is part of another statement, so it can have no WITH queries of its own. */
+  private QueryImpl nested() {
+    if (!steps.queries().isEmpty()) {
+      throw new IllegalArgumentException("A query that is part of another statement cannot have with(), because SQL"
+          + " Server allows WITH only at the start of a statement. Call with() on the outermost query.");
+    }
+    return this;
   }
 }

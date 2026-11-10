@@ -40,6 +40,7 @@ Each dot-separated part is quoted on its own: `shop.orders` renders as `"shop"."
 | `count()`                                        | Selects `COUNT(*)` as the column `count`.                                                    |
 | `include(String column, Query rows)`             | Adds related rows as a JSON array column.                                                    |
 | `includeOne(String column, Query row)`           | Adds the first related row as a JSON object column. Adds `LIMIT 1` to `row`.                 |
+| `with(String name, Combinable rows)`             | Adds a WITH query: `WITH name AS (rows)`, which the query reads like a table named `name`, as in `dialect.collection(name)`. Only on the outermost query. |
 | `on(String column, String outerColumn)`          | Relates this query to the enclosing query: `column = outerColumn`.                           |
 | `groupBy(String... columns)`                     | Adds `GROUP BY` columns.                                                                     |
 | `having(Filter filter)`                          | Adds a filter on groups.                                                                     |

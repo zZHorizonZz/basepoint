@@ -16,6 +16,7 @@ import dev.horizon.basepoint.contract.TestDatabase;
 import dev.horizon.basepoint.contract.TextFilterContractTest;
 import dev.horizon.basepoint.contract.UpdateContractTest;
 import dev.horizon.basepoint.contract.UpsertContractTest;
+import dev.horizon.basepoint.contract.WithContractTest;
 import org.junit.jupiter.api.Nested;
 
 class MariaDbContractTest {
@@ -150,6 +151,15 @@ class MariaDbContractTest {
 
   @Nested
   class Durations extends DurationContractTest {
+
+    @Override
+    protected TestDatabase database() {
+      return DATABASE;
+    }
+  }
+
+  @Nested
+  class WithQueries extends WithContractTest {
 
     @Override
     protected TestDatabase database() {

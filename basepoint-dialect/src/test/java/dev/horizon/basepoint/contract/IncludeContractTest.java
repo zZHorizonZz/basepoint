@@ -17,6 +17,7 @@ import dev.horizon.basepoint.Query;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 public abstract class IncludeContractTest extends ContractTest {
@@ -78,14 +79,16 @@ public abstract class IncludeContractTest extends ContractTest {
   }
 
   @Test
-  void filtersBySubquery() throws SQLException {
+  @DisplayName("Filters by the value of a subquery")
+  void filterBySubquery() throws SQLException {
     Expression itemCount = subquery(items.query().on("order_id", "id").count());
 
     assertThat(ids(orders.query().columns("id").where(gt(itemCount, 1)))).containsExactly(1);
   }
 
   @Test
-  void ordersBySubqueryOfAnAggregate() throws SQLException {
+  @DisplayName("Selects and sorts by an aggregate of related rows")
+  void sortBySubquery() throws SQLException {
     Expression largest = subquery(items.query().on("order_id", "id").select("largest", max("qty")));
 
     List<Map<String, Object>> rows = rows(orders.query().columns("id").select("largest", largest)
@@ -96,7 +99,8 @@ public abstract class IncludeContractTest extends ContractTest {
   }
 
   @Test
-  void refusesSubqueryOfSeveralColumns() {
+  @DisplayName("Refuses a subquery of all columns or several columns")
+  void refuseSubquery() {
     assertThatThrownBy(() -> subquery(items.query().columns("sku", "qty"))).isInstanceOf(
         IllegalArgumentException.class).hasMessageContaining("selects 2 columns");
     assertThatThrownBy(() -> subquery(items.query())).isInstanceOf(IllegalArgumentException.class)
