@@ -30,6 +30,8 @@ public final class MariaDbDialect implements Dialect {
       .then(Decorator.of(Expression.Concat.class, concat -> (Expression) sql -> sql.append("CONCAT(")
           .render(concat.texts(), ", ").append(")")))
       .then(Decorator.of(Expression.Now.class, now -> (Expression) sql -> sql.append("UTC_TIMESTAMP(6)")))
+      .then(Decorator.of(Expression.Shift.class, shift -> (Expression) sql -> sql.append("(").render(shift.timestamp())
+          .append(" + INTERVAL " + shift.microseconds() + " MICROSECOND)")))
       .then(Decorator.of(Clause.OnConflict.class, MariaDbOnDuplicateKey::new))
       .then(Decorator.of(Clause.DefaultValues.class, ignored -> new MariaDbEmptyRow()))
       .then(Decorator.of(Include.class, MariaDbJson::new))

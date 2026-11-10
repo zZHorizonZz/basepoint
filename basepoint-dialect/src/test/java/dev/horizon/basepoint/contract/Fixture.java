@@ -7,7 +7,8 @@ import java.util.List;
 
 final class Fixture {
 
-  private static final List<String> TABLES = List.of("items", "orders", "products", "archived", "defaults", "labelled");
+  private static final List<String> TABLES = List.of("items", "orders", "products", "archived", "defaults", "labelled",
+      "events");
 
   private static final List<String> SCHEMA = List.of(
       "CREATE TABLE orders (id INT PRIMARY KEY, state VARCHAR(20) NOT NULL, total INT NOT NULL,"
@@ -34,7 +35,7 @@ final class Fixture {
   private Fixture() {
   }
 
-  static void load(Connection connection, String jsonType) throws SQLException {
+  static void load(Connection connection, String jsonType, String timestampType) throws SQLException {
     try (Statement statement = connection.createStatement()) {
       for (String table : TABLES) {
         statement.execute("DROP TABLE IF EXISTS " + table);
@@ -46,6 +47,7 @@ final class Fixture {
         statement.execute(sql);
       }
       statement.execute("CREATE TABLE labelled (id INT PRIMARY KEY, labels " + jsonType + ")");
+      statement.execute("CREATE TABLE events (id INT PRIMARY KEY, happened " + timestampType + " NOT NULL)");
       statement.execute(LABELLED);
     }
   }

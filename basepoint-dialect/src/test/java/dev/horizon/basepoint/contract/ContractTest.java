@@ -60,7 +60,7 @@ public abstract class ContractTest {
 
   @BeforeEach
   void loadFixture() throws SQLException {
-    Fixture.load(connection, database.jsonType());
+    Fixture.load(connection, database.jsonType(), database.timestampType());
   }
 
   protected List<Integer> ids(Query query) throws SQLException {

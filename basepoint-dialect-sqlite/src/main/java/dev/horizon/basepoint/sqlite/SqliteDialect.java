@@ -27,6 +27,10 @@ public final class SqliteDialect implements Dialect {
           .render(length.text()).append(")")))
       .then(Decorator.of(Expression.Now.class, now -> (Expression) sql -> sql.append(
           "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')")))
+      .then(Decorator.of(Expression.Shift.class, shift -> (Expression) sql -> sql.append(
+          "strftime('%Y-%m-%dT%H:%M:%fZ', ").render(shift.timestamp()).append(", '"
+              + shift.seconds().toPlainString()
+              + " seconds')")))
       .then(Decorator.of(Include.class, SqliteJson::new))
       .then(Decorator.of(Expression.JsonKey.class, SqliteJsonKey::new))
       .then(Decorator.of(Statement.class, statement -> statement.find(Clause.Lock.class).map(statement::remove)

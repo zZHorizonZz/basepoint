@@ -42,4 +42,9 @@ final class SqliteTestDatabase implements TestDatabase {
   public String jsonType() {
     return "TEXT";
   }
+
+  @Override
+  public String timestampType() {
+    return "TEXT";
+  }
 }
