@@ -120,10 +120,12 @@ The same expression renders the SQL of each database:
 | --------------- | --------------------------------------- | ----------------------------------------- | ----------------------------------------------------- | ------------------------------------------ |
 | `concat(a, b)`  | `(a \|\| b)`                            | `CONCAT(a, b)`                            | `(a + b)`                                             | `(a \|\| b)`                               |
 | `length(text)`  | `CHAR_LENGTH(text)`                     | `CHAR_LENGTH(text)`                       | `(LEN(text + 'x') - 1)`                               | `length(text)`                             |
-| `now()`         | `CURRENT_TIMESTAMP`                     | `UTC_TIMESTAMP(6)`                        | `SYSUTCDATETIME()`                                    | `strftime('%Y-%m-%dT%H:%M:%fZ', 'now')`    |
-| `add(t, 1 day)` | `(t + INTERVAL '86400.000000 seconds')` | `(t + INTERVAL 86400000000 MICROSECOND)`  | `DATEADD(microsecond, 0, DATEADD(second, 86400, t))`  | `strftime(..., t, '86400.000000 seconds')` |
+| `now()`         | `CURRENT_TIMESTAMP`                     | `UTC_TIMESTAMP(6)`                        | `SYSUTCDATETIME()`                                    | `(strftime('%Y-%m-%dT%H:%M:%f', 'now') \|\| '000Z')` |
+| `add(t, 1 day)` | `(t + INTERVAL '86400.000000 seconds')` | `(t + INTERVAL 86400000000 MICROSECOND)`  | `DATEADD(microsecond, 0, DATEADD(second, 86400, t))`  | `(strftime(..., t, '86400.000000 seconds') \|\| '000Z')` |
 
-`length` counts the spaces at the end of a text on every database.
+`length` counts the spaces at the end of a text on every database. SQLite keeps times as text, and `now()` and a
+moved timestamp give six digits of fraction, such as `2026-01-05T10:00:00.123000Z`, so they compare with times
+that a client writes to the microsecond. SQLite counts to the millisecond, so their last three digits are 0.
 
 ## Related
 

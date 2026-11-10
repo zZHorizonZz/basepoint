@@ -21,6 +21,11 @@ import dev.horizon.basepoint.statement.Statement;
  * without a limit. SQLite has no locks of rows: a
  * transaction that writes locks the whole database, so the dialect writes no lock.
  *
+ * <p>
+ * SQLite keeps times as text. {@code now()} and a moved timestamp give UTC with six digits of fraction, such as
+ * {@code 2026-01-05T10:00:00.123000Z}, so they compare as text with times that clients write to the microsecond. The
+ * time functions of SQLite count to the millisecond, so the last three digits of a time that they give are 0.
+ *
  * @param parameters the placeholder style
  */
 public record SqliteDialect(ParameterStyle parameters) implements Dialect {
@@ -31,11 +36,10 @@ public record SqliteDialect(ParameterStyle parameters) implements Dialect {
       .then(Decorator.of(Length.class, length -> (Expression) sql -> sql.append("length(")
           .render(length.text()).append(")")))
       .then(Decorator.of(Now.class, now -> (Expression) sql -> sql.append(
-          "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')")))
+          "(strftime('%Y-%m-%dT%H:%M:%f', 'now') || '000Z')")))
       .then(Decorator.of(Shift.class, shift -> (Expression) sql -> sql.append(
-          "strftime('%Y-%m-%dT%H:%M:%fZ', ").render(shift.timestamp()).append(", '"
-              + shift.seconds().toPlainString()
-              + " seconds')")))
+          "(strftime('%Y-%m-%dT%H:%M:%f', ").render(shift.timestamp()).append(", '"
+              + shift.seconds().toPlainString() + " seconds') || '000Z')")))
       .then(Decorator.of(Include.One.class, SqliteObject::new))
       .then(Decorator.of(Include.Many.class, SqliteArray::new))
       .then(Decorator.of(JsonKey.class, SqliteJsonKey::new))
