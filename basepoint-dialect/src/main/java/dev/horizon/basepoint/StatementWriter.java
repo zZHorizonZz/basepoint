@@ -164,7 +164,7 @@ public final class StatementWriter {
     }
     if (!outward.hasNext()) {
       throw new IllegalStateException("The column '" + column + "' refers to an enclosing query, but there is none."
-          + " Use on() only in a query that you pass to include(), includeOne(), includeCount() or exists().");
+          + " Use on() only in a query that you pass to include(), includeOne(), subquery() or exists().");
     }
     return append(outward.next().qualifier() + "." + dialect.quote(column));
   }

@@ -7,7 +7,7 @@ package dev.horizon.basepoint;
  * Queries are immutable. Each method returns a new query, so you can store a query and reuse it.
  *
  * <p>
- * A query can also select related rows for {@link #include}, {@link #includeOne}, {@link #includeCount} and
+ * A query can also select related rows for {@link #include}, {@link #includeOne}, {@link Expression#subquery} and
  * {@link Filter#exists}. In that case, {@link #on} relates its rows to the current row of the enclosing query.
  */
 public interface Query extends Filterable<Query>, Pageable<Query>, Combinable {
@@ -60,15 +60,6 @@ public interface Query extends Filterable<Query>, Pageable<Query>, Combinable {
    * @return a new query with the include
    */
   Query includeOne(String column, Query row);
-
-  /**
-   * Adds the number of related rows as a column.
-   *
-   * @param column the name of the result column, for example {@code item_count}
-   * @param rows the query of the related rows. Use {@link #on} to link them to the current row.
-   * @return a new query with the count
-   */
-  Query includeCount(String column, Query rows);
 
   /**
    * Relates the rows of this query to the current row of the enclosing query. A row matches when its

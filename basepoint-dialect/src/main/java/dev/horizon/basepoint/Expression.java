@@ -1,5 +1,7 @@
 package dev.horizon.basepoint;
 
+import dev.horizon.basepoint.impl.QueryImpl;
+
 import java.util.List;
 
 /**
@@ -108,6 +110,20 @@ public interface Expression extends Node {
    */
   static Expression max(String column) {
     return new Aggregate("MAX", column(column));
+  }
+
+  /**
+   * Returns a query that gives one value, used as a value: {@code (SELECT ...)}. Use {@link Query#on} to relate it to
+   * the current row, for example {@code subquery(items.query().on("order_id", "id").count())} for the number of
+   * items of each order.
+   *
+   * @param query the query, from {@link CollectionReference#query()}. It selects one column and gives at most one
+   * row, for example with {@link Query#count()}, an aggregate in {@link Query#select}, or {@link Query#limit}.
+   * @return the value
+   * @throws IllegalArgumentException if the query selects all columns or more than one
+   */
+  static Expression subquery(Query query) {
+    return new Subquery(QueryImpl.related(query).value());
   }
 
   /**

@@ -3,11 +3,12 @@
 An include adds related rows to each row of a query as a JSON column. Use it to read an order with its items in one
 statement.
 
-| Method                     | Column value                                                               |
-| -------------------------- | -------------------------------------------------------------------------- |
-| `include(name, rows)`      | A JSON array of objects. An empty array if there are no related rows.      |
-| `includeOne(name, row)`    | The first related row as a JSON object. `null` if there is no related row. |
-| `includeCount(name, rows)` | The number of related rows.                                                |
+| Method                  | Column value                                                               |
+| ----------------------- | -------------------------------------------------------------------------- |
+| `include(name, rows)`   | A JSON array of objects. An empty array if there are no related rows.      |
+| `includeOne(name, row)` | The first related row as a JSON object. `null` if there is no related row. |
+
+For one value of the related rows, such as their number, use `Expression.subquery`, as [Count related rows](#count-related-rows) shows.
 
 ## Include a list of rows
 
@@ -51,13 +52,23 @@ orders.query()
 
 ## Count related rows
 
+`Expression.subquery` turns a related query that gives one value into a value.
+Select it, filter by it, or sort by it:
+
 ```java
+Expression itemCount = subquery(items.query().on("order_id", "id").count());
+
 orders.query()
     .columns("id")
-    .includeCount("item_count", items.query().on("order_id", "id"));
+    .select("item_count", itemCount)
+    .where(gt(itemCount, 1))
+    .orderBy("item_count", Direction.DESC);
 ```
 
-This renders a subquery, `(SELECT COUNT(*) FROM "items" AS "t1" WHERE ("t1"."order_id" = "t0"."id"))`.
+This renders the subquery `(SELECT COUNT(*) AS "count" FROM "items" AS "t1" WHERE ("t1"."order_id" = "t0"."id"))` in the select list and again in the `WHERE` clause, because `WHERE` cannot read the alias `item_count`.
+
+The query selects one column, and gives at most one row: `count()`, an aggregate such as `select("largest", max("qty"))`, or `limit(1)`.
+A query that selects all columns or several columns throws `IllegalArgumentException`.
 
 ## Nest includes
 

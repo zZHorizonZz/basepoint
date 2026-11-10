@@ -40,7 +40,6 @@ Each dot-separated part is quoted on its own: `shop.orders` renders as `"shop"."
 | `count()`                                        | Selects `COUNT(*)` as the column `count`.                                                    |
 | `include(String column, Query rows)`             | Adds related rows as a JSON array column.                                                    |
 | `includeOne(String column, Query row)`           | Adds the first related row as a JSON object column. Adds `LIMIT 1` to `row`.                 |
-| `includeCount(String column, Query rows)`        | Adds the number of related rows as a column.                                                 |
 | `on(String column, String outerColumn)`          | Relates this query to the enclosing query: `column = outerColumn`.                           |
 | `groupBy(String... columns)`                     | Adds `GROUP BY` columns.                                                                     |
 | `having(Filter filter)`                          | Adds a filter on groups.                                                                     |
@@ -57,7 +56,7 @@ Each dot-separated part is quoted on its own: `shop.orders` renders as `"shop"."
 
 If you call `select` and also want table columns, list the table columns with `columns`.
 
-`on` works only in a query that you pass to `include`, `includeOne`, `includeCount`, `Filter.exists` or
+`on` works only in a query that you pass to `include`, `includeOne`, `Expression.subquery`, `Filter.exists` or
 `Filter.notExists`. In a top-level query, `build()` throws `IllegalStateException`.
 
 ## `CompoundQuery`
@@ -127,3 +126,4 @@ A later assignment to the same column replaces the earlier one.
 | `avg(column)`      | `AVG("t0"."column")`                                                                      |
 | `min(column)`      | `MIN("t0"."column")`                                                                      |
 | `max(column)`      | `MAX("t0"."column")`                                                                      |
+| `subquery(query)`  | `(SELECT ...)`, a query that selects one column and gives at most one row. See [Include related rows](../how-to/include-related-rows.md#count-related-rows). |
