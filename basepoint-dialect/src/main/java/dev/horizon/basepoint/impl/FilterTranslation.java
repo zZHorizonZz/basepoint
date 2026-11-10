@@ -17,7 +17,9 @@ import dev.horizon.basepoint.Filter;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -31,12 +33,31 @@ import java.util.regex.Pattern;
  * A field of two parts, such as {@code labels.env}, becomes the value of a key of the JSON object in a column, as
  * {@link Expression#key} gives it, and its values compare as text. {@code labels:env} matches the rows whose object has
  * the key {@code env}, which is how AIP-160 tests a map for a key.
+ *
+ * <p>
+ * When the first part names a relation of the query, such as {@code customer.region}, the field is a path instead: a
+ * column of the related row, which compares as a column does.
  */
 public final class FilterTranslation {
 
   private static final Pattern INTEGER = Pattern.compile("-?\\d+");
   private static final Pattern DECIMAL = Pattern.compile("-?\\d+(\\.\\d+)?([eE][+-]?\\d+)?");
   private static final Object NULL = new Object();
+
+  private final Set<String> relations;
+  private final Set<String> keys = new LinkedHashSet<>();
+
+  public FilterTranslation() {
+    this(Set.of());
+  }
+
+  public FilterTranslation(Set<String> relations) {
+    this.relations = Set.copyOf(relations);
+  }
+
+  public Set<String> keys() {
+    return Set.copyOf(keys);
+  }
 
   public Filter translate(Condition condition) {
     return switch (condition) {
@@ -64,21 +85,34 @@ public final class FilterTranslation {
     List<String> segments = restriction.fieldPath().segments();
     Operator operator = restriction.operator();
     dev.horizon.aquery.aip160.Filter.Value value = restriction.value();
+    boolean any = value instanceof Text text && text.text().equals("*");
+    if (segments.size() == 2 && relations.contains(segments.getFirst())) {
+      if (operator == Operator.HAS && !any) {
+        throw new InvalidFilterException("Unsupported filter '%s:%s'. %s is a relation of the query, and a column of a"
+            + " relation supports only ':*', which matches the rows whose related row has a value in it.",
+            String.join(".", segments), string(value), segments.getFirst());
+      }
+      return column(Expression.column(segments.getFirst(), segments.get(1)), operator, value);
+    }
     if (segments.size() == 2) {
+      keys.add(segments.getFirst());
       return keyed(key(segments.getFirst(), segments.get(1)), operator, value);
     }
     if (segments.size() != 1) {
-      throw new InvalidFilterException("Unsupported field path '%s'. Use a column name, or a column and a key of the"
-          + " JSON object in it, for example labels.env.", String.join(".", segments));
+      throw new InvalidFilterException("Unsupported field path '%s'. Use a column name, a column and a key of the"
+          + " JSON object in it, such as labels.env, or a relation and its column, such as customer.region.",
+          String.join(".", segments));
     }
-    Expression column = Expression.column(segments.getFirst());
+    if (operator == Operator.HAS && !any) {
+      keys.add(segments.getFirst());
+      return new Filter.IsNull(key(segments.getFirst(), string(value)), true);
+    }
+    return column(Expression.column(segments.getFirst()), operator, value);
+  }
+
+  private Filter column(Expression column, Operator operator, dev.horizon.aquery.aip160.Filter.Value value) {
     return switch (operator) {
-      case HAS -> {
-        if (value instanceof Text text && text.text().equals("*")) {
-          yield new Filter.IsNull(column, true);
-        }
-        yield new Filter.IsNull(key(segments.getFirst(), string(value)), true);
-      }
+      case HAS -> new Filter.IsNull(column, true);
       case STARTS_WITH -> new Filter.Match(column, List.of(string(value), ""), false);
       case ENDS_WITH -> new Filter.Match(column, List.of("", string(value)), false);
       case EQUALS, NOT_EQUALS -> equality(column, operator == Operator.NOT_EQUALS, value);

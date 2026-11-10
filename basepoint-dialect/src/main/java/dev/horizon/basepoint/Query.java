@@ -141,6 +141,10 @@ public interface Query extends Filterable<Query>, Pageable<Query>, Combinable {
    * repeat each row once for each related row: read related rows of many with {@link #include}, {@link Filter#exists}
    * or {@link Expression#subquery}.
    *
+   * <p>
+   * Filter text of {@link #where(String)} reads a field of two parts, such as {@code customer.region}, as a path when
+   * the query names the relation before the text, and as a key of a JSON column otherwise.
+   *
    * @param name the name of the relation, which paths read
    * @param rows the related rows: a query with {@link #on}, which relates them to the row, and optionally a filter.
    * The outer column of {@code on} can be a path of an earlier relation, such as {@code customer.country_id}.

@@ -43,6 +43,18 @@ A field of two parts, such as `labels.env`, is the value of a key of the JSON ob
 `env`, which is how [AIP-160](https://google.aip.dev/160#has-operator) tests a map for a key. The SQL of each
 database is in [Dialects](dialects.md#differences-by-database).
 
+## Columns of relations
+
+In the filter text of a query with a relation, a field of two parts whose first part names the relation is a column
+of the related row: `customer.region = EU` reads the column `region` of the relation `customer`, as
+`column("customer", "region")` gives it. It compares as a column does, so it supports every operator, and
+`customer.region:*` matches the rows whose related row has a value in it.
+
+The query must name the relation before the filter text: text before it reads `customer.region` as a key of a JSON
+column, and `relation("customer", ...)` after it throws `IllegalArgumentException`. A relation hides a JSON column of
+the same name, so give relations names that no JSON column has. This applies to `Query.where(String)`. A filter from
+`Filter.of`, which knows no query, reads every field of two parts as a key of a JSON column.
+
 ## Values
 
 | Form                                         | Java type                                              |
@@ -67,7 +79,7 @@ Parsing throws `dev.horizon.aquery.InvalidQueryException` in these cases:
 | Text           | Message                                                                                                                      |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `plain`        | `The filter term 'plain' has no column. Compare a column with a value, for example state = OPEN.`                            |
-| `a.b.c = 1`    | `Unsupported field path 'a.b.c'. Use a column name, or a column and a key of the JSON object in it, for example labels.env.` |
+| `a.b.c = 1`    | `Unsupported field path 'a.b.c'. Use a column name, a column and a key of the JSON object in it, such as labels.env, or a relation and its column, such as customer.region.` |
 | `a.b > 1`      | `Unsupported operator '>' on a key of a JSON object, whose values compare only as text.`                                     |
 | `total > null` | `Cannot compare null with >. Use = or != with null.`                                                                         |
 
