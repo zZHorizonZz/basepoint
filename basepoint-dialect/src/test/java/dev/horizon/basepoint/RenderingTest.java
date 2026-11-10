@@ -2,6 +2,7 @@ package dev.horizon.basepoint;
 
 import static dev.horizon.basepoint.Expression.column;
 import static dev.horizon.basepoint.Expression.key;
+import static dev.horizon.basepoint.Expression.subquery;
 import static dev.horizon.basepoint.Expression.sum;
 import static dev.horizon.basepoint.Filter.and;
 import static dev.horizon.basepoint.Filter.contains;
@@ -69,9 +70,10 @@ class RenderingTest {
             "SELECT \"t0\".\"state\", SUM(\"t0\".\"total\") AS \"revenue\" FROM \"orders\" AS \"t0\""
                 + " GROUP BY \"t0\".\"state\" HAVING (SUM(\"t0\".\"total\") > ?) ORDER BY \"revenue\" DESC",
             List.of(1000)),
-        arguments("include count", ORDERS.query().columns("id").includeCount("n", ITEMS.query().on("order_id", "id")),
-            "SELECT \"t0\".\"id\", (SELECT COUNT(*) FROM \"items\" AS \"t1\" WHERE (\"t1\".\"order_id\" = \"t0\".\"id\"))"
-                + " AS \"n\" FROM \"orders\" AS \"t0\"",
+        arguments("count of related rows", ORDERS.query().columns("id").select("n", subquery(ITEMS.query().on(
+            "order_id", "id").count())),
+            "SELECT \"t0\".\"id\", (SELECT COUNT(*) AS \"count\" FROM \"items\" AS \"t1\" WHERE"
+                + " (\"t1\".\"order_id\" = \"t0\".\"id\")) AS \"n\" FROM \"orders\" AS \"t0\"",
             List.of()),
         arguments("paging", ORDERS.query().orderBy("id").limit(10).offset(20),
             "SELECT \"t0\".* FROM \"orders\" AS \"t0\" ORDER BY \"t0\".\"id\" ASC LIMIT 10 OFFSET 20", List.of()),

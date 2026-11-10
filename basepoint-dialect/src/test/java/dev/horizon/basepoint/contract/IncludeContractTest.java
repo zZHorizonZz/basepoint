@@ -1,7 +1,10 @@
 package dev.horizon.basepoint.contract;
 
+import static dev.horizon.basepoint.Expression.max;
+import static dev.horizon.basepoint.Expression.subquery;
 import static dev.horizon.basepoint.Filter.eq;
 import static dev.horizon.basepoint.Filter.exists;
+import static dev.horizon.basepoint.Filter.gt;
 import static dev.horizon.basepoint.Filter.gte;
 import static dev.horizon.basepoint.Filter.in;
 import static dev.horizon.basepoint.Filter.notExists;
@@ -9,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.horizon.basepoint.Direction;
+import dev.horizon.basepoint.Expression;
 import dev.horizon.basepoint.Query;
 import java.sql.SQLException;
 import java.util.List;
@@ -68,9 +72,35 @@ public abstract class IncludeContractTest extends ContractTest {
   @Test
   void countsRelatedRows() throws SQLException {
     List<Map<String, Object>> rows = rows(orders.query().columns("id")
-        .includeCount("item_count", items.query().on("order_id", "id")).orderBy("id"));
+        .select("item_count", subquery(items.query().on("order_id", "id").count())).orderBy("id"));
 
     assertThat(rows).extracting(row -> number(row.get("item_count"))).containsExactly(3L, 1L, 1L, 0L, 1L);
+  }
+
+  @Test
+  void filtersBySubquery() throws SQLException {
+    Expression itemCount = subquery(items.query().on("order_id", "id").count());
+
+    assertThat(ids(orders.query().columns("id").where(gt(itemCount, 1)))).containsExactly(1);
+  }
+
+  @Test
+  void ordersBySubqueryOfAnAggregate() throws SQLException {
+    Expression largest = subquery(items.query().on("order_id", "id").select("largest", max("qty")));
+
+    List<Map<String, Object>> rows = rows(orders.query().columns("id").select("largest", largest)
+        .where(gt(largest, 1)).orderBy(largest, Direction.DESC));
+
+    assertThat(rows).extracting(row -> (int) number(row.get("id"))).containsExactly(2, 5, 1);
+    assertThat(rows).extracting(row -> number(row.get("largest"))).containsExactly(5L, 4L, 3L);
+  }
+
+  @Test
+  void refusesSubqueryOfSeveralColumns() {
+    assertThatThrownBy(() -> subquery(items.query().columns("sku", "qty"))).isInstanceOf(
+        IllegalArgumentException.class).hasMessageContaining("selects 2 columns");
+    assertThatThrownBy(() -> subquery(items.query())).isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("selects all columns");
   }
 
   @Test

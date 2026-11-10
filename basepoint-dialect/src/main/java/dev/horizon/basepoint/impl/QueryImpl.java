@@ -186,12 +186,6 @@ public final class QueryImpl implements Query {
   }
 
   @Override
-  public Query includeCount(String column, Query rows) {
-    return with(steps.withInclude(new Named(column,
-        new Expression.Subquery(related(rows).select(Expression.count())))));
-  }
-
-  @Override
   public Query on(String column, String outerColumn) {
     return with(steps.withOn(new Filter.Related(column, outerColumn)));
   }
@@ -306,6 +300,22 @@ public final class QueryImpl implements Query {
    */
   public Statement exists() {
     return select(new Expression.Literal(1));
+  }
+
+  /**
+   * Returns this query as one value of an enclosing statement.
+   *
+   * @return the statement
+   * @throws IllegalArgumentException if the query selects all columns or more than one
+   */
+  public Statement value() {
+    int selected = steps.columns().size() + steps.values().size() + steps.includes().size();
+    if (selected != 1) {
+      throw new IllegalArgumentException("A subquery selects one column, but this query selects " + (selected == 0
+          ? "all columns"
+          : selected + " columns") + ". Select one with count(), select(name, value) or columns(name).");
+    }
+    return statement();
   }
 
   /** Returns a SELECT of one value over the filtered rows. */

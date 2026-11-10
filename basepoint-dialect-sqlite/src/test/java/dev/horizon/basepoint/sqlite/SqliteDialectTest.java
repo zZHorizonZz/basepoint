@@ -1,6 +1,7 @@
 package dev.horizon.basepoint.sqlite;
 
 import static dev.horizon.basepoint.Expression.key;
+import static dev.horizon.basepoint.Expression.subquery;
 import static dev.horizon.basepoint.Filter.eq;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -44,11 +45,11 @@ class SqliteDialectTest {
                 + " \"t2\".\"sku\" ASC) AS \"t1\") AS \"items\" FROM \"orders\" AS \"t0\""),
         arguments("nested include", ORDERS.query().columns("id").include("items",
             ITEMS.query().on("order_id", "id").columns("sku")
-                .includeCount("n", DIALECT.collection("parts").query().on("sku", "sku"))
+                .select("n", subquery(DIALECT.collection("parts").query().on("sku", "sku").count()))
                 .includeOne("product", DIALECT.collection("products").query().on("sku", "sku").columns("name"))),
             "SELECT \"t0\".\"id\", (SELECT COALESCE(json_group_array(json_object('sku', \"t1\".\"sku\", 'n',"
                 + " \"t1\".\"n\", 'product', json(\"t1\".\"product\"))), '[]') FROM (SELECT \"t2\".\"sku\", (SELECT"
-                + " COUNT(*) FROM \"parts\" AS \"t3\" WHERE (\"t3\".\"sku\" = \"t2\".\"sku\")) AS \"n\", (SELECT"
+                + " COUNT(*) AS \"count\" FROM \"parts\" AS \"t3\" WHERE (\"t3\".\"sku\" = \"t2\".\"sku\")) AS \"n\", (SELECT"
                 + " json_object('name', \"t4\".\"name\") FROM (SELECT \"t5\".\"name\" FROM \"products\" AS \"t5\" WHERE"
                 + " (\"t5\".\"sku\" = \"t2\".\"sku\") LIMIT 1) AS \"t4\") AS \"product\" FROM \"items\" AS \"t2\" WHERE"
                 + " (\"t2\".\"order_id\" = \"t0\".\"id\")) AS \"t1\") AS \"items\" FROM \"orders\" AS \"t0\""));
