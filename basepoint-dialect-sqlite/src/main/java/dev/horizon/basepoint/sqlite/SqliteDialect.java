@@ -22,7 +22,12 @@ public final class SqliteDialect implements Dialect {
   public static final String NAME = "SQLite";
 
   private final ParameterStyle parameters;
-  private final Decorator decorator = new SqliteLimits().then(Decorator.of(Include.class, SqliteJson::new))
+  private final Decorator decorator = new SqliteLimits()
+      .then(Decorator.of(Expression.Length.class, length -> (Expression) sql -> sql.append("length(")
+          .render(length.text()).append(")")))
+      .then(Decorator.of(Expression.Now.class, now -> (Expression) sql -> sql.append(
+          "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')")))
+      .then(Decorator.of(Include.class, SqliteJson::new))
       .then(Decorator.of(Expression.JsonKey.class, SqliteJsonKey::new))
       .then(Decorator.of(Statement.class, statement -> statement.find(Clause.Lock.class).map(statement::remove)
           .orElse(statement)));

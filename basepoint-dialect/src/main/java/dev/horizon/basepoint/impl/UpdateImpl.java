@@ -70,14 +70,14 @@ public final class UpdateImpl implements UpdateQuery {
 
   @Override
   public UpdateQuery set(String column, Object value) {
-    return with(steps.withAssignment(new Clause.Assignment(column,
-        value == null ? new Expression.Null() : Expression.value(value))));
+    return with(
+        steps.withAssignment(new Clause.Assignment(column, value == null ? new Expression.Null() : Expression.value(value))));
   }
 
   @Override
   public UpdateQuery increment(String column, Number amount) {
-    return with(steps.withAssignment(new Clause.Assignment(column,
-        new Expression.Plus(Expression.column(column), Expression.value(amount)))));
+    return with(steps
+        .withAssignment(new Clause.Assignment(column, Expression.add(Expression.column(column), Expression.value(amount)))));
   }
 
   @Override

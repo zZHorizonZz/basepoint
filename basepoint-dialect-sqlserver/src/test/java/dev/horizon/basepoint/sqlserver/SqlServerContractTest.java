@@ -5,6 +5,7 @@ import dev.horizon.basepoint.contract.CompoundQueryContractTest;
 import dev.horizon.basepoint.contract.DecoratorContractTest;
 import dev.horizon.basepoint.contract.DeleteContractTest;
 import dev.horizon.basepoint.contract.FilterContractTest;
+import dev.horizon.basepoint.contract.FunctionContractTest;
 import dev.horizon.basepoint.contract.IncludeContractTest;
 import dev.horizon.basepoint.contract.InsertContractTest;
 import dev.horizon.basepoint.contract.JsonContractTest;
@@ -130,6 +131,15 @@ class SqlServerContractTest {
 
   @Nested
   class Json extends JsonContractTest {
+
+    @Override
+    protected TestDatabase database() {
+      return DATABASE;
+    }
+  }
+
+  @Nested
+  class Functions extends FunctionContractTest {
 
     @Override
     protected TestDatabase database() {
