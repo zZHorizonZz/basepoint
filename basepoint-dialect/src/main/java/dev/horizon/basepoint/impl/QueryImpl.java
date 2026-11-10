@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * The default {@link Query}.
@@ -220,7 +221,43 @@ public final class QueryImpl implements Query {
       default -> throw new IllegalArgumentException("The rows of a WITH query must be a query or a compound query"
           + " from this library, but are " + rows.getClass().getName() + ".");
     };
-    return with(steps.withQuery(new Clause.WithQuery(name, statement)));
+    return with(steps.withQuery(new Clause.WithQuery(name, statement, false)));
+  }
+
+  @Override
+  public Query withRecursive(String name, Query start, Query step) {
+    QueryImpl first = part(name, "start", start);
+    QueryImpl next = part(name, "step", step);
+    if (first.reads(name)) {
+      throw new IllegalArgumentException("The start of the recursive WITH query " + name + " reads it. Only the step"
+          + " reads it, through a relation.");
+    }
+    if (!next.reads(name)) {
+      throw new IllegalArgumentException("The step of the recursive WITH query " + name + " does not read it. Read it"
+          + " through a relation, such as relation(\"parent\", dialect.collection(\"" + name + "\").query().on(\"id\","
+          + " \"parent_id\")).");
+    }
+    Statement rows = new Statement(null, List.of(new Clause.Operand(first.derived()), new Clause.SetOperator(
+        "UNION ALL"), new Clause.Operand(next.nested().statement(false, Set.of(name)))));
+    return with(steps.withQuery(new Clause.WithQuery(name, rows, true)));
+  }
+
+  /** Gives a part of a recursive WITH query, which relates to no outer row and has no limit or offset. */
+  private QueryImpl part(String name, String role, Query rows) {
+    if (!(rows instanceof QueryImpl query)) {
+      throw new IllegalArgumentException("The " + role + " of the recursive WITH query " + name + " must be a query"
+          + " from a collection.");
+    }
+    if (!query.steps.on().isEmpty() || query.paged()) {
+      throw new IllegalArgumentException("The " + role + " of the recursive WITH query " + name + " has on(), a limit"
+          + " or an offset, which a part of a recursive WITH query cannot have.");
+    }
+    return query;
+  }
+
+  /** Tells if this query reads a table, as its source or as the table of a relation. */
+  private boolean reads(String name) {
+    return table.equals(name) || steps.relations().stream().anyMatch(relation -> relation.table().equals(name));
   }
 
   @Override
@@ -403,12 +440,17 @@ public final class QueryImpl implements Query {
     List<Clause> clauses = new ArrayList<>();
     clauses.add(new Clause.Select(false, List.of(value)));
     clauses.add(new Clause.From());
-    clauses.addAll(joins());
+    clauses.addAll(joins(Set.of()));
     where().ifPresent(clauses::add);
     return new Statement(Source.aliased(table), clauses);
   }
 
   private Statement statement(boolean keepOrder) {
+    return statement(keepOrder, Set.of());
+  }
+
+  /** Builds the statement, with an inner join for each relation to one of the tables of {@code inner}. */
+  private Statement statement(boolean keepOrder, Set<String> inner) {
     List<Expression> columns = new ArrayList<>();
     steps.columns().forEach(name -> columns.add(Expression.column(name)));
     steps.values().forEach(value -> columns.add(new Expression.As(value.value(), value.name())));
@@ -420,7 +462,7 @@ public final class QueryImpl implements Query {
     }
     clauses.add(new Clause.Select(steps.distinct(), columns));
     clauses.add(new Clause.From());
-    clauses.addAll(joins());
+    clauses.addAll(joins(inner));
     where().ifPresent(clauses::add);
     if (!steps.groupBy().isEmpty()) {
       clauses.add(new Clause.GroupBy(steps.groupBy()));
@@ -450,11 +492,10 @@ public final class QueryImpl implements Query {
   }
 
   /** Returns a sort key. A name from the SELECT list renders unqualified; any other name is a table column. */
-  /** Gives the joins of the relations, in their order. */
-  private List<Clause> joins() {
-    return steps.relations().stream()
-        .<Clause> map(relation -> new Clause.Join(relation.name(), relation.table(), relation.condition(), false))
-        .toList();
+  /** Gives the joins of the relations, in their order, with an inner join for a relation to one of the tables. */
+  private List<Clause> joins(Set<String> inner) {
+    return steps.relations().stream().<Clause> map(relation -> new Clause.Join(relation.name(), relation.table(),
+        relation.condition(), inner.contains(relation.table()))).toList();
   }
 
   private Clause.Sort sort(Order order) {

@@ -79,6 +79,33 @@ public interface Query extends Filterable<Query>, Pageable<Query>, Combinable {
   Query with(String name, Combinable rows);
 
   /**
+   * Adds a recursive WITH query: {@code WITH RECURSIVE name AS (start UNION ALL step)}. The step reads the rows that
+   * the query has so far through a relation to it, so each pass adds the rows that follow from the last ones, such as
+   * the children of the categories found before:
+   *
+   * <pre>{@code
+   * Query start = categories.query().columns("id").select("depth", value(0)).where(eq("id", 1));
+   * Query step = categories.query().relation("parent", dialect.collection("tree").query().on("id", "parent_id"))
+   *     .columns("id").select("depth", add(column("parent", "depth"), value(1)));
+   * dialect.collection("tree").query().withRecursive("tree", start, step);
+   * }</pre>
+   *
+   * <p>
+   * The start and the step select the same columns, in the same order. A relation of the step to the WITH query is an
+   * inner join, since the databases allow the recursive reference only there. A limit of the depth is the job of the
+   * step, such as {@code where(lt(column("parent", "depth"), 10))}: a cycle in the data recurses until the database
+   * stops it. SQL Server stops after 100 levels.
+   *
+   * @param name the name of the WITH query
+   * @param start the first rows, which do not read the WITH query
+   * @param step the rows that follow from the rows so far, which read the WITH query through a relation
+   * @return a new query with the WITH query
+   * @throws IllegalArgumentException if the start reads the WITH query, the step does not, or one of them has
+   * {@link #on}, a limit or an offset
+   */
+  Query withRecursive(String name, Query start, Query step);
+
+  /**
    * Relates the rows of this query to the current row of the enclosing query. A row matches when its
    * {@code column} equals the enclosing row's {@code outerColumn}. Each call adds a pair of columns.
    *

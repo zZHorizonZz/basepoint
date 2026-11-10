@@ -1,6 +1,7 @@
 package dev.horizon.basepoint.sqlserver;
 
 import dev.horizon.aquery.ParameterStyle;
+import dev.horizon.basepoint.Clause;
 import dev.horizon.basepoint.Decorator;
 import dev.horizon.basepoint.Dialect;
 import dev.horizon.basepoint.Expression;
@@ -27,6 +28,7 @@ public final class SqlServerDialect implements Dialect {
           .render(length.text()).append(" + 'x') - 1)")))
       .then(Decorator.of(Expression.Now.class, now -> (Expression) sql -> sql.append("SYSUTCDATETIME()")))
       .then(Decorator.of(Expression.Shift.class, SqlServerShift::new))
+      .then(Decorator.of(Clause.With.class, with -> (Clause) sql -> sql.append("WITH ").render(with.queries(), ", ")))
       .then(new SqlServerMerge()).then(new SqlServerOutput())
       .then(new SqlServerPaging())
       .then(Decorator.of(Include.class, SqlServerJson::new));

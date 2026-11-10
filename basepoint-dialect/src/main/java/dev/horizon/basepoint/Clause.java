@@ -74,9 +74,18 @@ public interface Clause extends Node {
       queries = List.copyOf(queries);
     }
 
+    /**
+     * Tells if one of the queries reads itself, which makes the whole list recursive.
+     *
+     * @return true if a query is recursive
+     */
+    public boolean recursive() {
+      return queries.stream().anyMatch(WithQuery::recursive);
+    }
+
     @Override
     public void render(StatementWriter sql) {
-      sql.append("WITH ").render(queries, ", ");
+      sql.append(recursive() ? "WITH RECURSIVE " : "WITH ").render(queries, ", ");
     }
   }
 
@@ -85,8 +94,9 @@ public interface Clause extends Node {
    *
    * @param name the name, which the statement reads like a table
    * @param rows the statement of its rows
+   * @param recursive true if the rows read the query itself, as {@code start UNION ALL step}
    */
-  record WithQuery(String name, Statement rows) implements Node {
+  record WithQuery(String name, Statement rows, boolean recursive) implements Node {
 
     @Override
     public void render(StatementWriter sql) {
