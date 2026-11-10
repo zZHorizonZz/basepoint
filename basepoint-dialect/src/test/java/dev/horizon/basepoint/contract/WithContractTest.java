@@ -1,8 +1,13 @@
 package dev.horizon.basepoint.contract;
 
+import static dev.horizon.basepoint.Expression.add;
+import static dev.horizon.basepoint.Expression.column;
+import static dev.horizon.basepoint.Expression.value;
 import static dev.horizon.basepoint.Filter.eq;
 import static dev.horizon.basepoint.Filter.exists;
 import static dev.horizon.basepoint.Filter.gt;
+import static dev.horizon.basepoint.Filter.isNull;
+import static dev.horizon.basepoint.Filter.lt;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -106,5 +111,72 @@ public abstract class WithContractTest extends ContractTest {
   void refuseDuplicate() {
     assertThatThrownBy(() -> big.query().with("big", orders.query()).with("big", items.query()))
         .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("two WITH queries named big");
+  }
+
+  private Query start(CollectionReference categories) {
+    return categories.query().columns("id", "parent_id").select("depth", value(0)).where(eq("id", 1));
+  }
+
+  private Query step(CollectionReference categories) {
+    return categories.query().relation("parent", dialect.collection("tree").query().on("id", "parent_id"))
+        .columns("id", "parent_id").select("depth", add(column("parent", "depth"), value(1)));
+  }
+
+  @Test
+  @DisplayName("Reads every descendant of a row, with its depth")
+  void recurse() throws SQLException {
+    CollectionReference categories = dialect.collection("categories");
+    List<Map<String, Object>> rows = rows(dialect.collection("tree").query().withRecursive("tree", start(categories),
+        step(categories)).columns("id", "depth").orderBy("id"));
+
+    assertThat(rows).extracting(row -> (int) number(row.get("id"))).containsExactly(1, 2, 3, 4, 5);
+    assertThat(rows).extracting(row -> number(row.get("depth"))).containsExactly(0L, 1L, 1L, 2L, 3L);
+  }
+
+  @Test
+  @DisplayName("Stops at the depth that the step allows")
+  void limitDepth() throws SQLException {
+    CollectionReference categories = dialect.collection("categories");
+    Query step = step(categories).where(lt(column("parent", "depth"), 1));
+
+    assertThat(ids(dialect.collection("tree").query().withRecursive("tree", start(categories), step).columns("id")))
+        .containsExactly(1, 2, 3);
+  }
+
+  @Test
+  @DisplayName("Reads every ancestor of a row")
+  void ascend() throws SQLException {
+    CollectionReference categories = dialect.collection("categories");
+    Query start = categories.query().columns("id", "parent_id").where(eq("id", 5));
+    Query step = categories.query().relation("child", dialect.collection("tree").query().on("parent_id", "id"))
+        .columns("id", "parent_id");
+
+    assertThat(ids(dialect.collection("tree").query().withRecursive("tree", start, step).columns("id")))
+        .containsExactly(1, 2, 4, 5);
+  }
+
+  @Test
+  @DisplayName("Reads a recursive WITH query after another WITH query")
+  void recurseAfterAnother() throws SQLException {
+    CollectionReference categories = dialect.collection("categories");
+    Query start = dialect.collection("roots").query().columns("id", "parent_id").select("depth", value(0));
+    Query query = dialect.collection("tree").query()
+        .with("roots", categories.query().columns("id", "parent_id").where(isNull("parent_id")))
+        .withRecursive("tree", start, step(categories)).count();
+
+    assertThat(number(rows(query).getFirst().get("count"))).isEqualTo(7);
+  }
+
+  @Test
+  @DisplayName("Refuses a start that reads the WITH query, a step that does not, and a part with on()")
+  void refuseRecursion() {
+    CollectionReference categories = dialect.collection("categories");
+    CollectionReference tree = dialect.collection("tree");
+    assertThatThrownBy(() -> tree.query().withRecursive("tree", step(categories), step(categories)))
+        .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("The start of the recursive WITH query");
+    assertThatThrownBy(() -> tree.query().withRecursive("tree", start(categories), start(categories)))
+        .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("does not read it");
+    assertThatThrownBy(() -> tree.query().withRecursive("tree", start(categories).on("id", "parent_id"),
+        step(categories))).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("has on()");
   }
 }

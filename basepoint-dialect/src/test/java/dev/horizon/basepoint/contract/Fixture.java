@@ -8,7 +8,7 @@ import java.util.List;
 final class Fixture {
 
   private static final List<String> TABLES = List.of("items", "orders", "products", "archived", "defaults", "labelled",
-      "events");
+      "events", "categories");
 
   private static final List<String> SCHEMA = List.of(
       "CREATE TABLE orders (id INT PRIMARY KEY, state VARCHAR(20) NOT NULL, total INT NOT NULL,"
@@ -16,7 +16,8 @@ final class Fixture {
       "CREATE TABLE items (id INT PRIMARY KEY, order_id INT NOT NULL, sku VARCHAR(20) NOT NULL, qty INT NOT NULL)",
       "CREATE TABLE products (sku VARCHAR(20) PRIMARY KEY, name VARCHAR(50) NOT NULL)",
       "CREATE TABLE archived (id INT PRIMARY KEY, state VARCHAR(20) NOT NULL)",
-      "CREATE TABLE defaults (id INT NOT NULL DEFAULT 7, label VARCHAR(10) NOT NULL DEFAULT 'x')");
+      "CREATE TABLE defaults (id INT NOT NULL DEFAULT 7, label VARCHAR(10) NOT NULL DEFAULT 'x')",
+      "CREATE TABLE categories (id INT PRIMARY KEY, parent_id INT, name VARCHAR(20) NOT NULL)");
 
   private static final String LABELLED = "INSERT INTO labelled (id, labels) VALUES (1, '{\"env\": \"prod\","
       + " \"team\": \"core\"}'), (2, '{\"env\": \"dev\", \"team\": \"web\"}'),"
@@ -30,7 +31,9 @@ final class Fixture {
       "INSERT INTO items (id, order_id, sku, qty) VALUES (10, 1, 'MUG', 2), (11, 1, 'CUP', 1),"
           + " (12, 1, 'a%b_c', 3), (13, 2, 'MUG', 5), (14, 3, 'x[1]', 1), (15, 5, 'PLATE', 4)",
       "INSERT INTO products (sku, name) VALUES ('MUG', 'Mug'), ('CUP', 'Cup'), ('PLATE', 'Plate')",
-      "INSERT INTO archived (id, state) VALUES (1, 'OPEN'), (6, 'CLOSED'), (7, 'OPEN')");
+      "INSERT INTO archived (id, state) VALUES (1, 'OPEN'), (6, 'CLOSED'), (7, 'OPEN')",
+      "INSERT INTO categories (id, parent_id, name) VALUES (1, NULL, 'Home'), (2, 1, 'Kitchen'), (3, 1, 'Garden'),"
+          + " (4, 2, 'Mugs'), (5, 4, 'Tea mugs'), (6, NULL, 'Office'), (7, 6, 'Desks')");
 
   private Fixture() {
   }

@@ -41,6 +41,7 @@ Each dot-separated part is quoted on its own: `shop.orders` renders as `"shop"."
 | `include(String column, Query rows)`             | Adds related rows as a JSON array column.                                                    |
 | `includeOne(String column, Query row)`           | Adds the first related row as a JSON object column. Adds `LIMIT 1` to `row`.                 |
 | `with(String name, Combinable rows)`             | Adds a WITH query: `WITH name AS (rows)`, which the query reads like a table named `name`, as in `dialect.collection(name)`. Only on the outermost query. |
+| `withRecursive(String name, Query start, Query step)` | Adds a recursive WITH query: `WITH RECURSIVE name AS (start UNION ALL step)`, `WITH` on SQL Server. The step reads the WITH query through a relation, which is an inner join, and limits the depth itself. SQL Server stops after 100 levels. |
 | `on(String column, String outerColumn)`          | Relates this query to the enclosing query: `column = outerColumn`.                           |
 | `relation(String name, Query rows)`             | Names the related row of each row, which `column(name, column)` reads. Writes a `LEFT JOIN`. See [Include related rows](../how-to/include-related-rows.md#read-a-column-of-the-related-row). |
 | `groupBy(String... columns)`                     | Adds `GROUP BY` columns.                                                                     |
