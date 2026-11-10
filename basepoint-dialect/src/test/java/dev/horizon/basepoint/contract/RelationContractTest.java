@@ -7,6 +7,7 @@ import static dev.horizon.basepoint.Filter.exists;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import dev.horizon.aquery.aip160.InvalidFilterException;
 import dev.horizon.basepoint.Direction;
 import dev.horizon.basepoint.Query;
 import java.sql.SQLException;
@@ -85,6 +86,30 @@ public abstract class RelationContractTest extends ContractTest {
         .where(eq(column("product", "name"), "Plate"));
 
     assertThat(ids(orders.query().columns("id").where(exists(plates)))).containsExactly(5);
+  }
+
+  @Test
+  @DisplayName("Reads a column of a relation in filter text, and compares it as a column")
+  void filterText() throws SQLException {
+    assertThat(ids(itemsWithOrder().columns("id").where("order.region = EU AND order.total > 100")))
+        .containsExactly(10, 11, 12, 14);
+    assertThat(ids(itemsWithOrder().columns("id").where("order.state = \"CL*\""))).containsExactly(14);
+  }
+
+  @Test
+  @DisplayName("Refuses a relation named after filter text that read its name as a JSON column")
+  void refuseLateRelation() {
+    Query text = items.query().where("order.region = EU");
+
+    assertThatThrownBy(() -> text.relation("order", orders.query().on("id", "order_id")))
+        .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Name the relation order before");
+  }
+
+  @Test
+  @DisplayName("Refuses a test for a key on a column of a relation in filter text")
+  void refuseKeyOfPath() {
+    assertThatThrownBy(() -> itemsWithOrder().where("order.region:EU")).isInstanceOf(InvalidFilterException.class)
+        .hasMessageContaining("supports only ':*'");
   }
 
   @Test
