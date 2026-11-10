@@ -50,6 +50,38 @@ orders.query()
 
 `includeOne` adds `LIMIT 1` to the related query.
 
+## Read a column of the related row
+
+An include gives the related rows as JSON.
+To use a column of a related row in the row itself, such as the region of the customer of each order, name the relation with `relation`, and read its columns with `column(relation, column)`:
+
+```java
+orders.query()
+    .relation("customer", customers.query().on("id", "customer_id"))
+    .columns("id")
+    .select("region", column("customer", "region"))
+    .where(eq(column("customer", "region"), "EU"))
+    .orderBy(column("customer", "name"), Direction.ASC);
+```
+
+The query writes a `LEFT JOIN` for each relation.
+A row whose related row does not exist stays, and its paths read `NULL`.
+A filter of the relation's query decides which related row a path reads, not which rows the query gives.
+
+A relation gives at most one related row for each row, such as the customer of an order.
+A relation of many rows, such as the items of an order, would repeat the order once for each item: use an include, `exists` or `subquery` for those.
+
+A relation can relate to an earlier one through a path in the outer column of `on`:
+
+```java
+items.query()
+    .relation("order", orders.query().on("id", "order_id"))
+    .relation("archive", archived.query().on("id", "order.id"))
+    .select("archived", column("archive", "state"));
+```
+
+`groupBy(column("customer", "region"))` groups by a column of the related row.
+
 ## Count related rows
 
 `Expression.subquery` turns a related query that gives one value into a value.

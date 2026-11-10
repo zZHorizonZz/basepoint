@@ -42,7 +42,9 @@ Each dot-separated part is quoted on its own: `shop.orders` renders as `"shop"."
 | `includeOne(String column, Query row)`           | Adds the first related row as a JSON object column. Adds `LIMIT 1` to `row`.                 |
 | `with(String name, Combinable rows)`             | Adds a WITH query: `WITH name AS (rows)`, which the query reads like a table named `name`, as in `dialect.collection(name)`. Only on the outermost query. |
 | `on(String column, String outerColumn)`          | Relates this query to the enclosing query: `column = outerColumn`.                           |
+| `relation(String name, Query rows)`             | Names the related row of each row, which `column(name, column)` reads. Writes a `LEFT JOIN`. See [Include related rows](../how-to/include-related-rows.md#read-a-column-of-the-related-row). |
 | `groupBy(String... columns)`                     | Adds `GROUP BY` columns.                                                                     |
+| `groupBy(Expression... values)`                 | Adds `GROUP BY` values, such as the column of a relation.                                    |
 | `having(Filter filter)`                          | Adds a filter on groups.                                                                     |
 | `orderBy(String column)`                         | Sorts ascending by a table column or a `select` column.                                      |
 | `orderBy(String column, Direction direction)`    | Sorts by a table column or a `select` column.                                                |
@@ -119,6 +121,7 @@ A later assignment to the same column replaces the earlier one.
 | Method             | SQL                                                                                       |
 | ------------------ | ----------------------------------------------------------------------------------------- |
 | `column(name)`     | `"t0"."name"`                                                                             |
+| `column(relation, name)` | A column of a relation of the query: `"t1"."name"`. |
 | `value(value)`     | A placeholder                                                                             |
 | `key(column, key)` | The value of a key of the JSON object in the column. See [Filters](filters.md#json-keys). |
 | `count()`          | `COUNT(*)`                                                                                |

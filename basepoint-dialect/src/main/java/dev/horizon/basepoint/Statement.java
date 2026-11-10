@@ -29,7 +29,11 @@ public record Statement(Source source, List<Clause> clauses) implements Node {
       renderClauses(sql);
       return;
     }
-    sql.scoped(source.qualifier(sql), source.rows(), () -> renderClauses(sql));
+    sql.scoped(source.qualifier(sql), source.rows(), () -> {
+      clauses.stream().filter(Clause.Join.class::isInstance).map(Clause.Join.class::cast)
+          .forEach(join -> sql.relate(join.name()));
+      renderClauses(sql);
+    });
   }
 
   private void renderClauses(StatementWriter sql) {

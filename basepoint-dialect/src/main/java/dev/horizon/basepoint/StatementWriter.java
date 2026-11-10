@@ -5,7 +5,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Renders one statement tree into SQL text and placeholder values.
@@ -36,7 +39,7 @@ public final class StatementWriter {
    * @param qualifier the SQL that qualifies its columns
    * @param rows the table or subquery
    */
-  private record Scope(String qualifier, Node rows) {
+  private record Scope(String qualifier, Node rows, Map<String, String> relations) {
   }
 
   /**
@@ -164,9 +167,50 @@ public final class StatementWriter {
     }
     if (!outward.hasNext()) {
       throw new IllegalStateException("The column '" + column + "' refers to an enclosing query, but there is none."
-          + " Use on() only in a query that you pass to include(), includeOne(), subquery() or exists().");
+          + " Use on() only in a query that you pass to include(), includeOne(), subquery(), exists() or relation().");
     }
-    return append(outward.next().qualifier() + "." + dialect.quote(column));
+    Scope outer = outward.next();
+    int dot = column.indexOf('.');
+    if (dot > 0 && outer.relations().containsKey(column.substring(0, dot))) {
+      return append(outer.relations().get(column.substring(0, dot)) + "." + dialect.quote(column.substring(dot + 1)));
+    }
+    return append(outer.qualifier() + "." + dialect.quote(column));
+  }
+
+  /**
+   * Gives the next alias to a relation of the current statement, which its paths and its join read.
+   *
+   * @param name the name of the relation
+   * @return the alias
+   */
+  public String relate(String name) {
+    String alias = alias();
+    scope().relations().put(name, alias);
+    return alias;
+  }
+
+  /**
+   * Returns the alias of a relation of the current statement.
+   *
+   * @param name the name of the relation
+   * @return the alias, or empty if the statement has no relation of the name
+   */
+  public Optional<String> relation(String name) {
+    return Optional.ofNullable(scope().relations().get(name));
+  }
+
+  /**
+   * Appends a column of a relation of the current statement: {@code alias.column}.
+   *
+   * @param relation the name of the relation
+   * @param column the column name
+   * @return this writer
+   * @throws IllegalStateException if the statement has no relation of the name
+   */
+  public StatementWriter path(String relation, String column) {
+    String alias = relation(relation).orElseThrow(() -> new IllegalStateException("The query has no relation named "
+        + relation + ". Name it with relation(\"" + relation + "\", rows) on the query that reads the path."));
+    return append(alias + "." + dialect.quote(column));
   }
 
   /**
@@ -214,7 +258,7 @@ public final class StatementWriter {
    * @return this writer
    */
   public StatementWriter scoped(String qualifier, Node rows, Runnable body) {
-    scopes.push(new Scope(qualifier, rows));
+    scopes.push(new Scope(qualifier, rows, new LinkedHashMap<>()));
     try {
       body.run();
     } finally {
