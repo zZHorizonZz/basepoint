@@ -63,6 +63,37 @@ public interface Clause extends Node {
     }
   }
 
+  /**
+   * {@code WITH name AS (rows), ...}, the WITH queries of a statement.
+   *
+   * @param queries the WITH queries, in their order
+   */
+  record With(List<WithQuery> queries) implements Clause {
+
+    public With {
+      queries = List.copyOf(queries);
+    }
+
+    @Override
+    public void render(StatementWriter sql) {
+      sql.append("WITH ").render(queries, ", ");
+    }
+  }
+
+  /**
+   * A query of a {@link With}: {@code name AS (rows)}.
+   *
+   * @param name the name, which the statement reads like a table
+   * @param rows the statement of its rows
+   */
+  record WithQuery(String name, Statement rows) implements Node {
+
+    @Override
+    public void render(StatementWriter sql) {
+      sql.name(name).append(" AS (").render(rows).append(")");
+    }
+  }
+
   /** {@code FROM} with the statement's source and its alias. */
   record From() implements Clause {
 

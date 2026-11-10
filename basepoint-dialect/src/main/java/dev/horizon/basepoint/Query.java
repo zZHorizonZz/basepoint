@@ -62,6 +62,23 @@ public interface Query extends Filterable<Query>, Pageable<Query>, Combinable {
   Query includeOne(String column, Query row);
 
   /**
+   * Adds a WITH query: {@code WITH name AS (rows)}, which this query and the queries in it read as a table named
+   * {@code name}, for example {@code dialect.collection("big").query().with("big", orders.query().where(gt("total",
+   * 100)))}. A WITH query can read the WITH queries that come before it.
+   *
+   * <p>
+   * Call it on the outermost query: a query that is part of another statement, such as an include or a subquery,
+   * cannot have its own WITH queries, because SQL Server allows {@code WITH} only at the start of a statement. The
+   * rows keep their sort order only with a limit or offset.
+   *
+   * @param name the name of the WITH query
+   * @param rows the rows, a query or a compound query, without {@link #on}
+   * @return a new query with the WITH query
+   * @throws IllegalArgumentException if the query has a WITH query with the name, or the rows use {@link #on}
+   */
+  Query with(String name, Combinable rows);
+
+  /**
    * Relates the rows of this query to the current row of the enclosing query. A row matches when its
    * {@code column} equals the enclosing row's {@code outerColumn}. Each call adds a pair of columns.
    *

@@ -26,6 +26,7 @@ import dev.horizon.basepoint.Expression;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 public abstract class FunctionContractTest extends ContractTest {
@@ -35,7 +36,8 @@ public abstract class FunctionContractTest extends ContractTest {
   }
 
   @Test
-  void joinsTexts() throws SQLException {
+  @DisplayName("Joins texts, and gives NULL when one of them is NULL")
+  void join() throws SQLException {
     Expression label = concat(column("state"), value("-"), column("region"));
 
     List<Map<String, Object>> rows = rows(orders.query().columns("id").select("label", label).where(in("id", List.of(1,
@@ -45,7 +47,8 @@ public abstract class FunctionContractTest extends ContractTest {
   }
 
   @Test
-  void changesTexts() throws SQLException {
+  @DisplayName("Writes a text in lower and upper case, and trims it")
+  void changeCase() throws SQLException {
     List<Map<String, Object>> rows = rows(items.query().columns("id").select("lower", lower(column("sku")))
         .select("upper", upper(column("sku"))).select("trimmed", trim(value("  x "))).where(eq("id", 12)));
 
@@ -54,7 +57,8 @@ public abstract class FunctionContractTest extends ContractTest {
   }
 
   @Test
-  void countsCharactersWithTrailingSpaces() throws SQLException {
+  @DisplayName("Counts the characters of a text, the spaces at its end too")
+  void countCharacters() throws SQLException {
     List<Map<String, Object>> rows = rows(orders.query().columns("id").select("n", length(value("ab  ")))
         .select("state", length(column("state"))).where(eq("id", 4)));
 
@@ -63,7 +67,8 @@ public abstract class FunctionContractTest extends ContractTest {
   }
 
   @Test
-  void calculates() throws SQLException {
+  @DisplayName("Adds, subtracts, multiplies and divides numbers")
+  void calculate() throws SQLException {
     List<Map<String, Object>> rows = rows(orders.query().columns("id")
         .select("sum", add(column("total"), value(5)))
         .select("difference", abs(subtract(column("total"), value(200))))
@@ -77,7 +82,8 @@ public abstract class FunctionContractTest extends ContractTest {
   }
 
   @Test
-  void takesTheFirstValueThatIsNotNull() throws SQLException {
+  @DisplayName("Gives the first value that is not NULL")
+  void takeFirst() throws SQLException {
     List<Map<String, Object>> rows = rows(orders.query().columns("id").select("place", coalesce(column("note"),
         column("region"), value("none"))).orderBy("id"));
 
@@ -85,7 +91,8 @@ public abstract class FunctionContractTest extends ContractTest {
   }
 
   @Test
-  void choosesByACondition() throws SQLException {
+  @DisplayName("Gives one of two values by a condition")
+  void choose() throws SQLException {
     List<Map<String, Object>> rows = rows(orders.query().columns("id").select("size", when(gt("total", 200), value(
         "big"), value("small"))).orderBy("id"));
 
@@ -93,19 +100,22 @@ public abstract class FunctionContractTest extends ContractTest {
   }
 
   @Test
-  void filtersAndSortsByFunctions() throws SQLException {
+  @DisplayName("Filters and sorts by a function")
+  void filterAndSort() throws SQLException {
     assertThat(idsInOrder(orders.query().columns("id").where(eq(lower(column("state")), "open"))
         .orderBy(length(column("region")), Direction.DESC).orderBy("id"))).containsExactly(1, 2, 5);
   }
 
   @Test
-  void givesTheCurrentTime() throws SQLException {
+  @DisplayName("Gives the current time")
+  void readClock() throws SQLException {
     assertThat(rows(orders.query().columns("id").select("now", now()).where(eq("id", 1))).getFirst().get("now"))
         .isNotNull();
   }
 
   @Test
-  void refusesFewerThanTwoValues() {
+  @DisplayName("Refuses concat and coalesce of fewer than two values")
+  void refuseOneValue() {
     assertThatThrownBy(() -> concat(column("state"))).isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("at least two");
     assertThatThrownBy(() -> coalesce(column("note"))).isInstanceOf(IllegalArgumentException.class)
