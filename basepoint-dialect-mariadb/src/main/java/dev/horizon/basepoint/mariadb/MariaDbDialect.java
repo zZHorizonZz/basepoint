@@ -4,6 +4,7 @@ import dev.horizon.aquery.ParameterStyle;
 import dev.horizon.basepoint.Clause;
 import dev.horizon.basepoint.Decorator;
 import dev.horizon.basepoint.Dialect;
+import dev.horizon.basepoint.Expression;
 import dev.horizon.basepoint.Include;
 import dev.horizon.basepoint.LockMode;
 
@@ -26,6 +27,9 @@ public final class MariaDbDialect implements Dialect {
 
   private final ParameterStyle parameters;
   private final Decorator decorator = new MariaDbLimits()
+      .then(Decorator.of(Expression.Concat.class, concat -> (Expression) sql -> sql.append("CONCAT(")
+          .render(concat.texts(), ", ").append(")")))
+      .then(Decorator.of(Expression.Now.class, now -> (Expression) sql -> sql.append("UTC_TIMESTAMP(6)")))
       .then(Decorator.of(Clause.OnConflict.class, MariaDbOnDuplicateKey::new))
       .then(Decorator.of(Clause.DefaultValues.class, ignored -> new MariaDbEmptyRow()))
       .then(Decorator.of(Include.class, MariaDbJson::new))

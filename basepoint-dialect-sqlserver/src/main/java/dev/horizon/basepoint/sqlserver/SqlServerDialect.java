@@ -3,6 +3,7 @@ package dev.horizon.basepoint.sqlserver;
 import dev.horizon.aquery.ParameterStyle;
 import dev.horizon.basepoint.Decorator;
 import dev.horizon.basepoint.Dialect;
+import dev.horizon.basepoint.Expression;
 import dev.horizon.basepoint.Include;
 
 /**
@@ -19,7 +20,13 @@ public final class SqlServerDialect implements Dialect {
   public static final String NAME = "SQL Server";
 
   private final ParameterStyle parameters;
-  private final Decorator decorator = new SqlServerLock().then(new SqlServerMerge()).then(new SqlServerOutput())
+  private final Decorator decorator = new SqlServerLock()
+      .then(Decorator.of(Expression.Concat.class, concat -> (Expression) sql -> sql.append("(")
+          .render(concat.texts(), " + ").append(")")))
+      .then(Decorator.of(Expression.Length.class, length -> (Expression) sql -> sql.append("(LEN(")
+          .render(length.text()).append(" + 'x') - 1)")))
+      .then(Decorator.of(Expression.Now.class, now -> (Expression) sql -> sql.append("SYSUTCDATETIME()")))
+      .then(new SqlServerMerge()).then(new SqlServerOutput())
       .then(new SqlServerPaging())
       .then(Decorator.of(Include.class, SqlServerJson::new));
 

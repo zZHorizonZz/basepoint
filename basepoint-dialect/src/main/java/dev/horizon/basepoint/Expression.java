@@ -127,6 +127,148 @@ public interface Expression extends Node {
   }
 
   /**
+   * Returns the sum of two numbers: {@code (left + right)}.
+   *
+   * @param left the first number
+   * @param right the second number
+   * @return the expression
+   */
+  static Expression add(Expression left, Expression right) {
+    return new Arithmetic(left, Arithmetic.Operator.ADD, right);
+  }
+
+  /**
+   * Returns the difference of two numbers: {@code (left - right)}.
+   *
+   * @param left the number
+   * @param right the number to subtract
+   * @return the expression
+   */
+  static Expression subtract(Expression left, Expression right) {
+    return new Arithmetic(left, Arithmetic.Operator.SUBTRACT, right);
+  }
+
+  /**
+   * Returns the product of two numbers: {@code (left * right)}.
+   *
+   * @param left the first number
+   * @param right the second number
+   * @return the expression
+   */
+  static Expression multiply(Expression left, Expression right) {
+    return new Arithmetic(left, Arithmetic.Operator.MULTIPLY, right);
+  }
+
+  /**
+   * Returns the quotient of two numbers: {@code (left / right)}. With two integers, PostgreSQL, SQL Server and SQLite
+   * give an integer, and MariaDB gives a decimal.
+   *
+   * @param left the number
+   * @param right the divisor
+   * @return the expression
+   */
+  static Expression divide(Expression left, Expression right) {
+    return new Arithmetic(left, Arithmetic.Operator.DIVIDE, right);
+  }
+
+  /**
+   * Returns the texts joined into one, for example {@code concat(column("first_name"), value(" "),
+   * column("last_name"))}. The result is {@code NULL} if one of the texts is {@code NULL}, on every database.
+   *
+   * @param texts the texts, at least two
+   * @return the expression
+   * @throws IllegalArgumentException if there are fewer than two texts
+   */
+  static Expression concat(Expression... texts) {
+    return new Concat(List.of(texts));
+  }
+
+  /**
+   * Returns a text in lower case: {@code LOWER(text)}.
+   *
+   * @param text the text
+   * @return the expression
+   */
+  static Expression lower(Expression text) {
+    return new Call("LOWER", List.of(text));
+  }
+
+  /**
+   * Returns a text in upper case: {@code UPPER(text)}.
+   *
+   * @param text the text
+   * @return the expression
+   */
+  static Expression upper(Expression text) {
+    return new Call("UPPER", List.of(text));
+  }
+
+  /**
+   * Returns a text without the spaces at its start and its end: {@code TRIM(text)}.
+   *
+   * @param text the text
+   * @return the expression
+   */
+  static Expression trim(Expression text) {
+    return new Call("TRIM", List.of(text));
+  }
+
+  /**
+   * Returns the number of characters of a text, spaces at its end included, on every database.
+   *
+   * @param text the text
+   * @return the expression
+   */
+  static Expression length(Expression text) {
+    return new Length(text);
+  }
+
+  /**
+   * Returns the absolute value of a number: {@code ABS(number)}.
+   *
+   * @param number the number
+   * @return the expression
+   */
+  static Expression abs(Expression number) {
+    return new Call("ABS", List.of(number));
+  }
+
+  /**
+   * Returns the first value that is not {@code NULL}: {@code COALESCE(values)}.
+   *
+   * @param values the values, at least two
+   * @return the expression
+   * @throws IllegalArgumentException if there are fewer than two values
+   */
+  static Expression coalesce(Expression... values) {
+    if (values.length < 2) {
+      throw new IllegalArgumentException("coalesce needs at least two values, but has " + values.length + ".");
+    }
+    return new Call("COALESCE", List.of(values));
+  }
+
+  /**
+   * Returns the current time in UTC, in the form that each database stores a timestamp.
+   *
+   * @return the expression
+   */
+  static Expression now() {
+    return new Now();
+  }
+
+  /**
+   * Returns one of two values, by a condition: {@code CASE WHEN condition THEN then ELSE otherwise END}.
+   *
+   * @param condition the condition
+   * @param then the value when the condition is true
+   * @param otherwise the value when the condition is false or {@code NULL}
+   * @return the expression
+   */
+  static Expression when(Filter condition, Expression then, Expression otherwise) {
+    return new Case(condition, then, otherwise);
+  }
+
+  /**
    * A column of the current source, qualified with the source's alias or table name.
    *
    * @param name the column name
@@ -227,16 +369,125 @@ public interface Expression extends Node {
   }
 
   /**
-   * The sum of two values: {@code (left + right)}.
+   * An arithmetic operation of two numbers, such as {@code (left + right)}.
    *
-   * @param left the first value
-   * @param right the second value
+   * @param left the first number
+   * @param operator the operator
+   * @param right the second number
    */
-  record Plus(Expression left, Expression right) implements Expression {
+  record Arithmetic(Expression left, Operator operator, Expression right) implements Expression {
 
     @Override
     public void render(StatementWriter sql) {
-      sql.append("(").render(left).append(" + ").render(right).append(")");
+      sql.append("(").render(left).append(" " + operator.symbol() + " ").render(right).append(")");
+    }
+
+    /** An arithmetic operator. */
+    public enum Operator {
+      /** {@code +}. */
+      ADD("+"),
+      /** {@code -}. */
+      SUBTRACT("-"),
+      /** {@code *}. */
+      MULTIPLY("*"),
+      /** {@code /}. */
+      DIVIDE("/");
+
+      private final String symbol;
+
+      Operator(String symbol) {
+        this.symbol = symbol;
+      }
+
+      /**
+       * Returns the SQL of the operator.
+       *
+       * @return the symbol, for example {@code +}
+       */
+      public String symbol() {
+        return symbol;
+      }
+    }
+  }
+
+  /**
+   * Texts joined into one, rendered as the standard {@code (a || b)}. Dialects whose database joins texts otherwise
+   * decorate it.
+   *
+   * @param texts the texts, at least two
+   */
+  record Concat(List<Expression> texts) implements Expression {
+
+    public Concat {
+      texts = List.copyOf(texts);
+      if (texts.size() < 2) {
+        throw new IllegalArgumentException("concat needs at least two texts, but has " + texts.size() + ".");
+      }
+    }
+
+    @Override
+    public void render(StatementWriter sql) {
+      sql.append("(").render(texts, " || ").append(")");
+    }
+  }
+
+  /**
+   * A function that every database writes the same way, such as {@code LOWER(text)}.
+   *
+   * @param name the function name, for example {@code LOWER}
+   * @param arguments the arguments
+   */
+  record Call(String name, List<Expression> arguments) implements Expression {
+
+    public Call {
+      arguments = List.copyOf(arguments);
+    }
+
+    @Override
+    public void render(StatementWriter sql) {
+      sql.append(name + "(").render(arguments, ", ").append(")");
+    }
+  }
+
+  /**
+   * The number of characters of a text, rendered as the standard {@code CHAR_LENGTH(text)}. Dialects whose database
+   * counts otherwise decorate it.
+   *
+   * @param text the text
+   */
+  record Length(Expression text) implements Expression {
+
+    @Override
+    public void render(StatementWriter sql) {
+      sql.append("CHAR_LENGTH(").render(text).append(")");
+    }
+  }
+
+  /**
+   * The current time in UTC, rendered as the standard {@code CURRENT_TIMESTAMP}. Dialects whose database gives
+   * another time or form decorate it.
+   */
+  record Now() implements Expression {
+
+    @Override
+    public void render(StatementWriter sql) {
+      sql.append("CURRENT_TIMESTAMP");
+    }
+  }
+
+  /**
+   * One of two values, by a condition: {@code CASE WHEN condition THEN then ELSE otherwise END}.
+   *
+   * @param condition the condition
+   * @param then the value when the condition is true
+   * @param otherwise the value when the condition is false or {@code NULL}
+   */
+  record Case(Filter condition, Expression then, Expression otherwise) implements Expression {
+
+    @Override
+    public void render(StatementWriter sql) {
+      sql.append("CASE WHEN ").render(condition).append(" THEN ").render(then).append(" ELSE ").render(otherwise)
+          .append(" END");
     }
   }
 

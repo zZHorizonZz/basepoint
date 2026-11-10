@@ -127,3 +127,11 @@ A later assignment to the same column replaces the earlier one.
 | `min(column)`      | `MIN("t0"."column")`                                                                      |
 | `max(column)`      | `MAX("t0"."column")`                                                                      |
 | `subquery(query)`  | `(SELECT ...)`, a query that selects one column and gives at most one row. See [Include related rows](../how-to/include-related-rows.md#count-related-rows). |
+| `add(left, right)` | `(left + right)`. Also `subtract`, `multiply` and `divide`. With two integers, `divide` gives an integer, except on MariaDB, which gives a decimal. |
+| `concat(texts...)` | The texts joined, `NULL` if one of them is `NULL`: `\|\|`, `CONCAT` on MariaDB, `+` on SQL Server. |
+| `lower(text)` | `LOWER(text)`. Also `upper` and `trim`. |
+| `length(text)` | The number of characters, spaces at the end included: `CHAR_LENGTH`, `length` on SQLite, `LEN` on SQL Server. |
+| `abs(number)` | `ABS(number)` |
+| `coalesce(values...)` | `COALESCE(values)`, the first value that is not `NULL`. |
+| `now()` | The current time in UTC: `CURRENT_TIMESTAMP`, `UTC_TIMESTAMP(6)` on MariaDB, `SYSUTCDATETIME()` on SQL Server, `strftime(...)` on SQLite. |
+| `when(condition, then, otherwise)` | `CASE WHEN condition THEN then ELSE otherwise END` |
