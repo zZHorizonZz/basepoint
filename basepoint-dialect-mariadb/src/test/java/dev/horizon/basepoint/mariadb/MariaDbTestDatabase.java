@@ -43,4 +43,9 @@ final class MariaDbTestDatabase implements TestDatabase {
   public String jsonType() {
     return "JSON";
   }
+
+  @Override
+  public String timestampType() {
+    return "DATETIME(6)";
+  }
 }

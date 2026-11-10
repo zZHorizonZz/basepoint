@@ -15,4 +15,6 @@ public interface TestDatabase {
   boolean includesWholeRows();
 
   String jsonType();
+
+  String timestampType();
 }

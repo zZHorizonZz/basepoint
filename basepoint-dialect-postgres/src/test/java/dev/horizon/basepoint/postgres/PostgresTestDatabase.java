@@ -42,4 +42,9 @@ final class PostgresTestDatabase implements TestDatabase {
   public String jsonType() {
     return "JSONB";
   }
+
+  @Override
+  public String timestampType() {
+    return "TIMESTAMPTZ";
+  }
 }

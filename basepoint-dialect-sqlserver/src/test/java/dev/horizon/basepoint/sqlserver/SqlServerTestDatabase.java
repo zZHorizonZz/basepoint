@@ -43,4 +43,9 @@ final class SqlServerTestDatabase implements TestDatabase {
   public String jsonType() {
     return "NVARCHAR(MAX)";
   }
+
+  @Override
+  public String timestampType() {
+    return "DATETIME2";
+  }
 }

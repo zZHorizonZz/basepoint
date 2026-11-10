@@ -134,4 +134,5 @@ A later assignment to the same column replaces the earlier one.
 | `abs(number)` | `ABS(number)` |
 | `coalesce(values...)` | `COALESCE(values)`, the first value that is not `NULL`. |
 | `now()` | The current time in UTC: `CURRENT_TIMESTAMP`, `UTC_TIMESTAMP(6)` on MariaDB, `SYSUTCDATETIME()` on SQL Server, `strftime(...)` on SQLite. |
+| `add(timestamp, duration)` | The timestamp moved later by a `java.time.Duration`, and `subtract(timestamp, duration)` earlier: `INTERVAL` on PostgreSQL and MariaDB, `DATEADD` on SQL Server, `strftime` on SQLite. To the microsecond, and to the millisecond on SQLite. |
 | `when(condition, then, otherwise)` | `CASE WHEN condition THEN then ELSE otherwise END` |

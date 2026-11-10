@@ -1,8 +1,10 @@
 package dev.horizon.basepoint;
 
 import dev.horizon.basepoint.impl.QueryImpl;
+import java.time.Duration;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A value in a statement, such as a column, a bound value, an aggregate or a subquery.
@@ -169,6 +171,30 @@ public interface Expression extends Node {
    */
   static Expression divide(Expression left, Expression right) {
     return new Arithmetic(left, Arithmetic.Operator.DIVIDE, right);
+  }
+
+  /**
+   * Returns a timestamp moved later by a duration, for example {@code add(now(), Duration.ofHours(2))}. Each database
+   * moves it to the microsecond, and SQLite to the millisecond.
+   *
+   * @param timestamp the timestamp
+   * @param duration the duration
+   * @return the expression
+   */
+  static Expression add(Expression timestamp, Duration duration) {
+    return new Shift(timestamp, duration);
+  }
+
+  /**
+   * Returns a timestamp moved earlier by a duration, for example {@code subtract(now(), Duration.ofDays(7))} for the
+   * time a week ago. Each database moves it to the microsecond, and SQLite to the millisecond.
+   *
+   * @param timestamp the timestamp
+   * @param duration the duration
+   * @return the expression
+   */
+  static Expression subtract(Expression timestamp, Duration duration) {
+    return new Shift(timestamp, duration.negated());
   }
 
   /**
@@ -472,6 +498,35 @@ public interface Expression extends Node {
     @Override
     public void render(StatementWriter sql) {
       sql.append("CURRENT_TIMESTAMP");
+    }
+  }
+
+  /**
+   * A timestamp moved by a duration, rendered as {@code (timestamp + INTERVAL 'n microseconds')}. Dialects whose
+   * database moves a timestamp otherwise decorate it.
+   *
+   * @param timestamp the timestamp
+   * @param duration the duration, earlier when it is negative
+   */
+  record Shift(Expression timestamp, Duration duration) implements Expression {
+
+    public Shift {
+      Objects.requireNonNull(timestamp, "timestamp");
+      Objects.requireNonNull(duration, "duration");
+    }
+
+    /**
+     * Returns the duration in whole microseconds.
+     *
+     * @return the microseconds, negative for an earlier time
+     */
+    public long microseconds() {
+      return Math.addExact(Math.multiplyExact(duration.getSeconds(), 1_000_000L), duration.getNano() / 1_000);
+    }
+
+    @Override
+    public void render(StatementWriter sql) {
+      sql.append("(").render(timestamp).append(" + INTERVAL '" + microseconds() + " microseconds')");
     }
   }
 

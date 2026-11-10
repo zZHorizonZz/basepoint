@@ -4,6 +4,7 @@ import dev.horizon.basepoint.contract.AggregateContractTest;
 import dev.horizon.basepoint.contract.CompoundQueryContractTest;
 import dev.horizon.basepoint.contract.DecoratorContractTest;
 import dev.horizon.basepoint.contract.DeleteContractTest;
+import dev.horizon.basepoint.contract.DurationContractTest;
 import dev.horizon.basepoint.contract.FilterContractTest;
 import dev.horizon.basepoint.contract.FunctionContractTest;
 import dev.horizon.basepoint.contract.IncludeContractTest;
@@ -140,6 +141,15 @@ class MariaDbContractTest {
 
   @Nested
   class Functions extends FunctionContractTest {
+
+    @Override
+    protected TestDatabase database() {
+      return DATABASE;
+    }
+  }
+
+  @Nested
+  class Durations extends DurationContractTest {
 
     @Override
     protected TestDatabase database() {

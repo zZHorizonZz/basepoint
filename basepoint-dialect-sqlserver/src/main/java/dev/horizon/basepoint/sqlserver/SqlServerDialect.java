@@ -26,6 +26,7 @@ public final class SqlServerDialect implements Dialect {
       .then(Decorator.of(Expression.Length.class, length -> (Expression) sql -> sql.append("(LEN(")
           .render(length.text()).append(" + 'x') - 1)")))
       .then(Decorator.of(Expression.Now.class, now -> (Expression) sql -> sql.append("SYSUTCDATETIME()")))
+      .then(Decorator.of(Expression.Shift.class, SqlServerShift::new))
       .then(new SqlServerMerge()).then(new SqlServerOutput())
       .then(new SqlServerPaging())
       .then(Decorator.of(Include.class, SqlServerJson::new));
