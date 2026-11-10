@@ -104,6 +104,25 @@ public interface Clause extends Node {
   }
 
   /**
+   * The join of a relation: {@code LEFT JOIN table AS alias ON condition}, or {@code JOIN} for an inner join. The
+   * condition reads the columns of the table, and the row of the statement as the enclosing row.
+   *
+   * @param name the name of the relation, which its paths read
+   * @param table the table of the relation
+   * @param condition the condition of the join
+   * @param inner true for an inner join, which keeps only the rows that have a related row
+   */
+  record Join(String name, String table, Filter condition, boolean inner) implements Clause {
+
+    @Override
+    public void render(StatementWriter sql) {
+      String alias = sql.relation(name).orElseThrow();
+      sql.append(inner ? "JOIN " : "LEFT JOIN ").table(table).append(" AS " + alias + " ON ");
+      sql.scoped(alias, new Source.Table(table), () -> sql.render(condition));
+    }
+  }
+
+  /**
    * {@code WHERE}.
    *
    * @param filter the condition

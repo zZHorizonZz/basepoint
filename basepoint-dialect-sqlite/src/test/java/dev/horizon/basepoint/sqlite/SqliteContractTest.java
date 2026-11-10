@@ -12,6 +12,7 @@ import dev.horizon.basepoint.contract.InsertContractTest;
 import dev.horizon.basepoint.contract.JsonContractTest;
 import dev.horizon.basepoint.contract.LockContractTest;
 import dev.horizon.basepoint.contract.PagingContractTest;
+import dev.horizon.basepoint.contract.RelationContractTest;
 import dev.horizon.basepoint.contract.TestDatabase;
 import dev.horizon.basepoint.contract.TextFilterContractTest;
 import dev.horizon.basepoint.contract.UpdateContractTest;
@@ -160,6 +161,15 @@ class SqliteContractTest {
 
   @Nested
   class WithQueries extends WithContractTest {
+
+    @Override
+    protected TestDatabase database() {
+      return DATABASE;
+    }
+  }
+
+  @Nested
+  class Relations extends RelationContractTest {
 
     @Override
     protected TestDatabase database() {

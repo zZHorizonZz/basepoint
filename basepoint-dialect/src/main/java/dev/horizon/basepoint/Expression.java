@@ -38,6 +38,18 @@ public interface Expression extends Node {
   }
 
   /**
+   * Returns a column of a relation of the query, a path: {@code column("customer", "region")} reads the column
+   * {@code region} of the row that the relation {@code customer} names.
+   *
+   * @param relation the name of the relation, from {@link Query#relation}
+   * @param name the column name
+   * @return the expression
+   */
+  static Expression column(String relation, String name) {
+    return new Path(relation, name);
+  }
+
+  /**
    * Returns the value of a key of the JSON object in a column, or {@code NULL} if the object has no such key. Compare
    * it with {@link Filter#eq(Expression, Object)}, and match the rows whose object has the key with
    * {@code ne(key(column, name), null)}.
@@ -305,6 +317,20 @@ public interface Expression extends Node {
     @Override
     public void render(StatementWriter sql) {
       sql.column(name);
+    }
+  }
+
+  /**
+   * A column of a relation of the query, qualified with the alias of the relation.
+   *
+   * @param relation the name of the relation
+   * @param name the column name
+   */
+  record Path(String relation, String name) implements Expression {
+
+    @Override
+    public void render(StatementWriter sql) {
+      sql.path(relation, name);
     }
   }
 

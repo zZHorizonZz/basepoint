@@ -15,6 +15,7 @@ import dev.horizon.basepoint.Source;
 import dev.horizon.basepoint.Statement;
 import dev.horizon.basepoint.StatementWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -40,7 +41,7 @@ public final class QueryImpl implements Query {
 
   public QueryImpl(Dialect dialect, String table) {
     this(dialect, table, new Steps(List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),
-        List.of(), false, null, null, null, List.of()));
+        List.of(), false, null, null, null, List.of(), List.of()));
   }
 
   /**
@@ -60,63 +61,75 @@ public final class QueryImpl implements Query {
    * @param lock the lock of the rows, or null for none
    */
   private record Steps(List<String> columns, List<Named> values, List<Named> includes, List<Filter> on,
-      List<Filter> filters, List<String> groupBy, List<Filter> having, List<Order> order, boolean distinct, Long limit,
-      Long offset, LockMode lock, List<Clause.WithQuery> queries) {
+      List<Filter> filters, List<Expression> groupBy, List<Filter> having, List<Order> order, boolean distinct, Long limit,
+      Long offset, LockMode lock, List<Clause.WithQuery> queries, List<Relation> relations) {
 
     Steps withColumns(List<String> more) {
       return new Steps(append(columns, more), values, includes, on, filters, groupBy, having, order, distinct, limit,
-          offset, lock, queries);
+          offset, lock, queries, relations);
     }
 
     Steps withValue(Named value) {
       return new Steps(columns, append(values, List.of(value)), includes, on, filters, groupBy, having, order,
-          distinct, limit, offset, lock, queries);
+          distinct, limit, offset, lock, queries, relations);
     }
 
     Steps withInclude(Named include) {
       return new Steps(columns, values, append(includes, List.of(include)), on, filters, groupBy, having, order,
-          distinct, limit, offset, lock, queries);
+          distinct, limit, offset, lock, queries, relations);
     }
 
     Steps withOn(Filter related) {
       return new Steps(columns, values, includes, append(on, List.of(related)), filters, groupBy, having, order,
-          distinct, limit, offset, lock, queries);
+          distinct, limit, offset, lock, queries, relations);
     }
 
     Steps withFilter(Filter filter) {
       return new Steps(columns, values, includes, on, append(filters, List.of(filter)), groupBy, having, order,
-          distinct, limit, offset, lock, queries);
+          distinct, limit, offset, lock, queries, relations);
     }
 
-    Steps withGroupBy(List<String> more) {
+    Steps withGroupBy(List<Expression> more) {
       return new Steps(columns, values, includes, on, filters, append(groupBy, more), having, order, distinct, limit,
-          offset, lock, queries);
+          offset, lock, queries, relations);
     }
 
     Steps withHaving(Filter filter) {
       return new Steps(columns, values, includes, on, filters, groupBy, append(having, List.of(filter)), order,
-          distinct, limit, offset, lock, queries);
+          distinct, limit, offset, lock, queries, relations);
     }
 
     Steps withOrder(Order more) {
       return new Steps(columns, values, includes, on, filters, groupBy, having, append(order, List.of(more)),
-          distinct, limit, offset, lock, queries);
+          distinct, limit, offset, lock, queries, relations);
     }
 
     Steps withDistinct() {
-      return new Steps(columns, values, includes, on, filters, groupBy, having, order, true, limit, offset, lock, queries);
+      return new Steps(columns, values, includes, on, filters, groupBy, having, order, true, limit, offset, lock, queries,
+          relations);
     }
 
     Steps withLimit(Long rows) {
-      return new Steps(columns, values, includes, on, filters, groupBy, having, order, distinct, rows, offset, lock, queries);
+      return new Steps(columns, values, includes, on, filters, groupBy, having, order, distinct, rows, offset, lock, queries,
+          relations);
     }
 
     Steps withOffset(Long rows) {
-      return new Steps(columns, values, includes, on, filters, groupBy, having, order, distinct, limit, rows, lock, queries);
+      return new Steps(columns, values, includes, on, filters, groupBy, having, order, distinct, limit, rows, lock, queries,
+          relations);
     }
 
     Steps withLock(LockMode mode) {
-      return new Steps(columns, values, includes, on, filters, groupBy, having, order, distinct, limit, offset, mode, queries);
+      return new Steps(columns, values, includes, on, filters, groupBy, having, order, distinct, limit, offset, mode, queries,
+          relations);
+    }
+
+    Steps withRelation(Relation relation) {
+      if (relations.stream().anyMatch(other -> other.name().equals(relation.name()))) {
+        throw new IllegalArgumentException("The query has two relations named " + relation.name() + ".");
+      }
+      return new Steps(columns, values, includes, on, filters, groupBy, having, order, distinct, limit, offset, lock,
+          queries, append(relations, List.of(relation)));
     }
 
     Steps withQuery(Clause.WithQuery query) {
@@ -124,7 +137,7 @@ public final class QueryImpl implements Query {
         throw new IllegalArgumentException("The query has two WITH queries named " + query.name() + ".");
       }
       return new Steps(columns, values, includes, on, filters, groupBy, having, order, distinct, limit, offset, lock,
-          append(queries, List.of(query)));
+          append(queries, List.of(query)), relations);
     }
 
     private static <T> List<T> append(List<T> list, List<T> items) {
@@ -151,6 +164,10 @@ public final class QueryImpl implements Query {
    * @param direction the direction
    */
   private record Order(String name, Expression value, Direction direction) {
+  }
+
+  /** A relation of the query: its table and the condition of its join. */
+  private record Relation(String name, String table, Filter condition) {
   }
 
   private QueryImpl with(Steps next) {
@@ -213,7 +230,49 @@ public final class QueryImpl implements Query {
 
   @Override
   public Query groupBy(String... columns) {
-    return with(steps.withGroupBy(List.of(columns)));
+    return with(steps.withGroupBy(Arrays.stream(columns).map(Expression::column).toList()));
+  }
+
+  @Override
+  public Query groupBy(Expression... values) {
+    return with(steps.withGroupBy(List.of(values)));
+  }
+
+  @Override
+  public Query relation(String name, Query rows) {
+    if (!(rows instanceof QueryImpl related)) {
+      throw new IllegalArgumentException("The rows of the relation " + name + " must be a query from a collection.");
+    }
+    Steps other = related.steps;
+    boolean plain = other.columns().isEmpty() && other.values().isEmpty() && other.includes().isEmpty()
+        && other.groupBy().isEmpty() && other.having().isEmpty() && other.order().isEmpty() && !other.distinct()
+        && other.limit() == null && other.offset() == null && other.lock() == null && other.queries().isEmpty()
+        && other.relations().isEmpty();
+    if (!plain) {
+      throw new IllegalArgumentException("The rows of the relation " + name + " can have only on() and filters. A"
+          + " relation of selected, grouped, sorted or limited rows is not supported.");
+    }
+    if (other.on().isEmpty()) {
+      throw new IllegalArgumentException("The rows of the relation " + name + " have no on(), so every row would"
+          + " relate to every row. Relate them with on(column, outerColumn).");
+    }
+    List<Filter> condition = new ArrayList<>(other.on());
+    condition.addAll(other.filters());
+    related.requireEarlier(steps.relations());
+    return with(steps.withRelation(new Relation(name, related.table, and(condition))));
+  }
+
+  /** Checks that each path in the outer columns of {@code on} reads a relation that the query names before. */
+  private void requireEarlier(List<Relation> earlier) {
+    for (Filter filter : steps.on()) {
+      if (filter instanceof Filter.Related(String _, String outer) && outer.indexOf('.') > 0) {
+        String relation = outer.substring(0, outer.indexOf('.'));
+        if (earlier.stream().noneMatch(other -> other.name().equals(relation))) {
+          throw new IllegalArgumentException("The outer column " + outer + " reads the relation " + relation
+              + ", which the query does not name before it.");
+        }
+      }
+    }
   }
 
   @Override
@@ -344,6 +403,7 @@ public final class QueryImpl implements Query {
     List<Clause> clauses = new ArrayList<>();
     clauses.add(new Clause.Select(false, List.of(value)));
     clauses.add(new Clause.From());
+    clauses.addAll(joins());
     where().ifPresent(clauses::add);
     return new Statement(Source.aliased(table), clauses);
   }
@@ -360,9 +420,10 @@ public final class QueryImpl implements Query {
     }
     clauses.add(new Clause.Select(steps.distinct(), columns));
     clauses.add(new Clause.From());
+    clauses.addAll(joins());
     where().ifPresent(clauses::add);
     if (!steps.groupBy().isEmpty()) {
-      clauses.add(new Clause.GroupBy(steps.groupBy().stream().map(Expression::column).toList()));
+      clauses.add(new Clause.GroupBy(steps.groupBy()));
     }
     if (!steps.having().isEmpty()) {
       clauses.add(new Clause.Having(and(steps.having())));
@@ -389,6 +450,13 @@ public final class QueryImpl implements Query {
   }
 
   /** Returns a sort key. A name from the SELECT list renders unqualified; any other name is a table column. */
+  /** Gives the joins of the relations, in their order. */
+  private List<Clause> joins() {
+    return steps.relations().stream()
+        .<Clause> map(relation -> new Clause.Join(relation.name(), relation.table(), relation.condition(), false))
+        .toList();
+  }
+
   private Clause.Sort sort(Order order) {
     if (order.value() != null) {
       return new Clause.Sort(order.value(), order.direction());

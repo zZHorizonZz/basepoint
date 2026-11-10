@@ -97,6 +97,33 @@ public interface Query extends Filterable<Query>, Pageable<Query>, Combinable {
   Query groupBy(String... columns);
 
   /**
+   * Groups rows by values, such as the column of a relation: {@code groupBy(column("customer", "region"))}.
+   *
+   * @param values the values
+   * @return a new query with the grouping
+   */
+  Query groupBy(Expression... values);
+
+  /**
+   * Names the related row of each row, which paths read: {@code column(name, column)} in {@link #select}, filters,
+   * {@link #orderBy(Expression, Direction)} and {@link #groupBy(Expression...)}. The query writes a {@code LEFT JOIN}
+   * for each relation, so a row whose related row does not exist stays, and its paths read {@code NULL}.
+   *
+   * <p>
+   * A relation gives at most one row for each row, such as the customer of an order. A relation of many rows would
+   * repeat each row once for each related row: read related rows of many with {@link #include}, {@link Filter#exists}
+   * or {@link Expression#subquery}.
+   *
+   * @param name the name of the relation, which paths read
+   * @param rows the related rows: a query with {@link #on}, which relates them to the row, and optionally a filter.
+   * The outer column of {@code on} can be a path of an earlier relation, such as {@code customer.country_id}.
+   * @return a new query with the relation
+   * @throws IllegalArgumentException if the query has a relation of the name, or the rows have no {@code on} or have
+   * anything other than {@code on} and filters
+   */
+  Query relation(String name, Query rows);
+
+  /**
    * Adds a filter on groups, for example {@code having(gt(sum("total"), 1000))}.
    *
    * @param filter the filter
