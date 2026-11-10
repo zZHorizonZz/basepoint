@@ -6,6 +6,7 @@ import dev.horizon.basepoint.contract.TestDatabase;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Map;
 import org.testcontainers.mssqlserver.MSSQLServerContainer;
 
 final class SqlServerTestDatabase implements TestDatabase {
@@ -30,6 +31,13 @@ final class SqlServerTestDatabase implements TestDatabase {
   }
 
   @Override
+  public Map<String, String> types() {
+    return Map.of("json", "NVARCHAR(MAX)", "timestamp", "DATETIME2", "text",
+        "NVARCHAR(MAX) COLLATE Latin1_General_100_CI_AS_SC", "bool", "BIT", "double",
+        "FLOAT");
+  }
+
+  @Override
   public boolean returnsUpdatedRows() {
     return true;
   }
@@ -40,12 +48,17 @@ final class SqlServerTestDatabase implements TestDatabase {
   }
 
   @Override
-  public String jsonType() {
-    return "NVARCHAR(MAX)";
+  public boolean keepsDecimals() {
+    return true;
   }
 
   @Override
-  public String timestampType() {
-    return "DATETIME2";
+  public boolean locksRows() {
+    return true;
+  }
+
+  @Override
+  public boolean refusedLock(SQLException failure) {
+    return failure.getErrorCode() == 1222;
   }
 }

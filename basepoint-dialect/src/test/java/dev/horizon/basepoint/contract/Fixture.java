@@ -1,57 +1,65 @@
 package dev.horizon.basepoint.contract;
 
+import dev.horizon.basepoint.Dialect;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-final class Fixture {
+record Fixture(Dialect dialect, Map<String, String> types) {
 
-  private static final List<String> TABLES = List.of("items", "orders", "products", "archived", "defaults", "labelled",
-      "events", "categories");
+  private static final Pattern NAME = Pattern.compile("\\[\\[(.+?)]]");
+  private static final Pattern TABLE = Pattern.compile("^CREATE TABLE (.+?) \\(");
 
-  private static final List<String> SCHEMA = List.of(
-      "CREATE TABLE orders (id INT PRIMARY KEY, state VARCHAR(20) NOT NULL, total INT NOT NULL,"
-          + " region VARCHAR(10), note VARCHAR(50))",
-      "CREATE TABLE items (id INT PRIMARY KEY, order_id INT NOT NULL, sku VARCHAR(20) NOT NULL, qty INT NOT NULL)",
-      "CREATE TABLE products (sku VARCHAR(20) PRIMARY KEY, name VARCHAR(50) NOT NULL)",
-      "CREATE TABLE archived (id INT PRIMARY KEY, state VARCHAR(20) NOT NULL)",
-      "CREATE TABLE defaults (id INT NOT NULL DEFAULT 7, label VARCHAR(10) NOT NULL DEFAULT 'x')",
-      "CREATE TABLE categories (id INT PRIMARY KEY, parent_id INT, name VARCHAR(20) NOT NULL)");
-
-  private static final String LABELLED = "INSERT INTO labelled (id, labels) VALUES (1, '{\"env\": \"prod\","
-      + " \"team\": \"core\"}'), (2, '{\"env\": \"dev\", \"team\": \"web\"}'),"
-      + " (3, '{\"env\": \"prod\", \"app.kubernetes.io/name\": \"shop\"}'), (4, '{}'), (5, NULL),"
-      + " (6, '{\"replicas\": 3}')";
-
-  private static final List<String> ROWS = List.of(
-      "INSERT INTO orders (id, state, total, region, note) VALUES (1, 'OPEN', 150, 'EU', NULL),"
-          + " (2, 'OPEN', 80, 'US', 'rush'), (3, 'CLOSED', 300, 'EU', 'gift'), (4, 'CANCELLED', 50, NULL, NULL),"
-          + " (5, 'OPEN', 220, 'US', NULL)",
-      "INSERT INTO items (id, order_id, sku, qty) VALUES (10, 1, 'MUG', 2), (11, 1, 'CUP', 1),"
-          + " (12, 1, 'a%b_c', 3), (13, 2, 'MUG', 5), (14, 3, 'x[1]', 1), (15, 5, 'PLATE', 4)",
-      "INSERT INTO products (sku, name) VALUES ('MUG', 'Mug'), ('CUP', 'Cup'), ('PLATE', 'Plate')",
-      "INSERT INTO archived (id, state) VALUES (1, 'OPEN'), (6, 'CLOSED'), (7, 'OPEN')",
-      "INSERT INTO categories (id, parent_id, name) VALUES (1, NULL, 'Home'), (2, 1, 'Kitchen'), (3, 1, 'Garden'),"
-          + " (4, 2, 'Mugs'), (5, 4, 'Tea mugs'), (6, NULL, 'Office'), (7, 6, 'Desks')");
-
-  private Fixture() {
+  void load(Connection connection) throws SQLException {
+    List<String> statements = statements();
+    try (Statement statement = connection.createStatement()) {
+      for (String sql : statements.reversed()) {
+        Matcher table = TABLE.matcher(sql);
+        if (table.find()) {
+          statement.execute("DROP TABLE IF EXISTS " + table.group(1));
+        }
+      }
+      for (String sql : statements) {
+        statement.execute(sql);
+      }
+    }
   }
 
-  static void load(Connection connection, String jsonType, String timestampType) throws SQLException {
-    try (Statement statement = connection.createStatement()) {
-      for (String table : TABLES) {
-        statement.execute("DROP TABLE IF EXISTS " + table);
+  private List<String> statements() {
+    String text = read();
+    for (Map.Entry<String, String> type : types.entrySet()) {
+      text = text.replace("{" + type.getKey() + "}", type.getValue());
+    }
+    text = NAME.matcher(text).replaceAll(name -> Matcher.quoteReplacement(dialect.quote(name.group(1))));
+    List<String> statements = new ArrayList<>();
+    StringBuilder statement = new StringBuilder();
+    for (String line : text.split("\n")) {
+      if (line.startsWith("--") || line.isBlank()) {
+        continue;
       }
-      for (String sql : SCHEMA) {
-        statement.execute(sql);
+      statement.append(line.strip()).append(' ');
+      if (line.stripTrailing().endsWith(";")) {
+        statements.add(statement.toString().strip().replaceAll(";$", ""));
+        statement.setLength(0);
       }
-      for (String sql : ROWS) {
-        statement.execute(sql);
-      }
-      statement.execute("CREATE TABLE labelled (id INT PRIMARY KEY, labels " + jsonType + ")");
-      statement.execute("CREATE TABLE events (id INT PRIMARY KEY, happened " + timestampType + " NOT NULL)");
-      statement.execute(LABELLED);
+    }
+    return statements;
+  }
+
+  private String read() {
+    try (InputStream input = Fixture.class.getResourceAsStream("/fixture.sql")) {
+      return new String(input.readAllBytes(), StandardCharsets.UTF_8).replace("\r", "");
+    } catch (IOException failure) {
+      throw new UncheckedIOException(failure);
     }
   }
 }

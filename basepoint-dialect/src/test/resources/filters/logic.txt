@@ -1,0 +1,39 @@
+AND keeps the rows that match both.
+filter orders: state = "OPEN" AND total > 100
+rows: 1, 5
+
+OR keeps the rows that match either.
+filter orders: total >= 220 OR region = US
+rows: 2, 3, 5
+
+Terms without an operator between them must all match.
+filter orders: state = OPEN region = US
+rows: 2, 5
+
+NOT negates.
+filter orders: NOT state = OPEN
+rows: 3, 4
+
+A minus negates.
+filter orders: -state = OPEN
+rows: 3, 4
+
+OR binds before AND, as AIP-160 says.
+filter orders: state = CLOSED AND region = EU OR total < 100
+rows: 3
+
+Parentheses group.
+filter orders: (region = EU OR region = US) AND total < 200
+rows: 1, 2
+
+Parentheses nest.
+filter orders: ((((((((((state = OPEN))))))))))
+rows: 1, 2, 5
+
+Empty text matches every row.
+filter orders:
+rows: 1, 2, 3, 4, 5
+
+A negation of a negation.
+filter orders: NOT (NOT state = OPEN)
+rows: 1, 2, 5

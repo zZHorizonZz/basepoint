@@ -1,0 +1,15 @@
+&& keeps the rows that match both.
+cel orders: state == 'OPEN' && total > 100
+rows: 1, 5
+
+|| keeps the rows that match either.
+cel orders: region == 'EU' || total < 60
+rows: 1, 3, 4
+
+! negates a group.
+cel orders: !(state == 'OPEN')
+rows: 3, 4
+
+!= leaves out NULL.
+cel orders: region != 'EU'
+rows: 2, 5

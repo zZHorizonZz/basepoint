@@ -1,10 +1,10 @@
 package dev.horizon.basepoint.postgres;
 
 import dev.horizon.aquery.ParameterStyle;
-import dev.horizon.basepoint.Decorator;
 import dev.horizon.basepoint.Dialect;
-import dev.horizon.basepoint.Expression;
-import dev.horizon.basepoint.Include;
+import dev.horizon.basepoint.expression.JsonKey;
+import dev.horizon.basepoint.statement.Decorator;
+import dev.horizon.basepoint.statement.Include;
 
 /**
  * The dialect for PostgreSQL 13 and later.
@@ -13,21 +13,19 @@ import dev.horizon.basepoint.Include;
  * Identifiers use double quotes. Placeholders default to {@code $1}, the style of the Vert.x PostgreSQL client. For
  * JDBC, use {@link ParameterStyle#QUESTION_MARK}. The dialect renders includes with {@code to_jsonb} and
  * {@code jsonb_agg}, and the value of a JSON key with {@code ->>}. All other clauses render as standard SQL.
+ *
+ * @param parameters the placeholder style
  */
-public final class PostgresDialect implements Dialect {
+public record PostgresDialect(ParameterStyle parameters) implements Dialect {
 
   public static final String NAME = "PostgreSQL";
 
-  private final ParameterStyle parameters;
-  private final Decorator decorator = Decorator.of(Include.class, PostgresJson::new)
-      .then(Decorator.of(Expression.JsonKey.class, PostgresJsonKey::new));
+  private static final Decorator DECORATOR = Decorator.of(Include.One.class, PostgresObject::new)
+      .then(Decorator.of(Include.Many.class, PostgresArray::new))
+      .then(Decorator.of(JsonKey.class, PostgresJsonKey::new));
 
   public PostgresDialect() {
     this(ParameterStyle.DOLLAR);
-  }
-
-  public PostgresDialect(ParameterStyle parameters) {
-    this.parameters = parameters;
   }
 
   @Override
@@ -41,12 +39,7 @@ public final class PostgresDialect implements Dialect {
   }
 
   @Override
-  public ParameterStyle parameters() {
-    return parameters;
-  }
-
-  @Override
   public Decorator decorator() {
-    return decorator;
+    return DECORATOR;
   }
 }

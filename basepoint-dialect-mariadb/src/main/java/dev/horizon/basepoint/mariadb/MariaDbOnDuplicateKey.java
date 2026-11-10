@@ -1,20 +1,11 @@
 package dev.horizon.basepoint.mariadb;
 
-import dev.horizon.basepoint.Clause;
-import dev.horizon.basepoint.StatementWriter;
+import dev.horizon.basepoint.statement.Clause;
+import dev.horizon.basepoint.statement.OnConflict;
+import dev.horizon.basepoint.statement.StatementWriter;
 import java.util.List;
 
-/**
- * {@code ON DUPLICATE KEY UPDATE}, the MariaDB form of {@link Clause.OnConflict}.
- *
- * <p>
- * {@code VALUES(column)} refers to the value of the inserted row. MariaDB matches any unique key of the table, not
- * only the key of the upsert. To keep an existing row unchanged, the clause sets the first key column to its own
- * value.
- *
- * @param conflict the upsert
- */
-record MariaDbOnDuplicateKey(Clause.OnConflict conflict) implements Clause {
+record MariaDbOnDuplicateKey(OnConflict conflict) implements Clause {
 
   @Override
   public void render(StatementWriter sql) {

@@ -1,5 +1,6 @@
 package dev.horizon.basepoint;
 
+import dev.horizon.basepoint.expression.Expression;
 import java.util.List;
 import java.util.Map;
 
@@ -11,21 +12,33 @@ import java.util.Map;
  * updates and {@link #delete()} for deletes. Call {@code build()} on a builder to get SQL text and values for any
  * database client.
  */
-public interface CollectionReference {
+public final class CollectionReference {
+
+  private final Dialect dialect;
+  private final String table;
+
+  CollectionReference(Dialect dialect, String table) {
+    this.dialect = dialect;
+    this.table = table;
+  }
 
   /**
    * Returns the table name.
    *
    * @return the table name, for example {@code shop.orders}
    */
-  String name();
+  public String name() {
+    return table;
+  }
 
   /**
    * Starts a query of all rows.
    *
    * @return the query
    */
-  Query query();
+  public Query query() {
+    return new Query(dialect, table);
+  }
 
   /**
    * Starts an insert of one row.
@@ -34,7 +47,9 @@ public interface CollectionReference {
    * row with the default value of every column.
    * @return the insert
    */
-  InsertQuery insert(Map<String, ?> row);
+  public InsertQuery insert(Map<String, ?> row) {
+    return insert(List.of(row));
+  }
 
   /**
    * Starts an insert of rows. Every row must set the same columns. The column order comes from the first row.
@@ -43,7 +58,9 @@ public interface CollectionReference {
    * @return the insert
    * @throws IllegalArgumentException if {@code rows} is empty or the rows set different columns
    */
-  InsertQuery insert(List<? extends Map<String, ?>> rows);
+  public InsertQuery insert(List<? extends Map<String, ?>> rows) {
+    return new InsertQuery(dialect, table, rows);
+  }
 
   /**
    * Starts an update. Add a filter with {@link UpdateQuery#where}, or call {@link UpdateQuery#all()} to update every
@@ -51,7 +68,9 @@ public interface CollectionReference {
    *
    * @return the update
    */
-  UpdateQuery update();
+  public UpdateQuery update() {
+    return new UpdateQuery(dialect, table);
+  }
 
   /**
    * Starts a delete. Add a filter with {@link DeleteQuery#where}, or call {@link DeleteQuery#all()} to delete every
@@ -59,5 +78,7 @@ public interface CollectionReference {
    *
    * @return the delete
    */
-  DeleteQuery delete();
+  public DeleteQuery delete() {
+    return new DeleteQuery(dialect, table);
+  }
 }

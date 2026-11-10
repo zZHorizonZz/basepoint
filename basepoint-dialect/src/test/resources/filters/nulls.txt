@@ -1,0 +1,19 @@
+= null matches NULL.
+filter orders: note = null
+rows: 1, 4, 5
+
+!= null matches the rows with a value.
+filter orders: note != null
+rows: 2, 3
+
+:* matches the rows with a value.
+filter orders: note:*
+rows: 2, 3
+
+NOT before :* matches NULL.
+filter orders: NOT note:*
+rows: 1, 4, 5
+
+null in quotes is the text null, not NULL.
+filter orders: note = "null"
+rows:

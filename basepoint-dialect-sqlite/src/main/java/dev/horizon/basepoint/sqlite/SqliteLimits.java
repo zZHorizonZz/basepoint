@@ -1,19 +1,27 @@
 package dev.horizon.basepoint.sqlite;
 
-import dev.horizon.basepoint.Clause;
-import dev.horizon.basepoint.Decorator;
-import dev.horizon.basepoint.Node;
-import dev.horizon.basepoint.Statement;
+import dev.horizon.basepoint.statement.Clause;
+import dev.horizon.basepoint.statement.Limit;
+import dev.horizon.basepoint.statement.Offset;
+import dev.horizon.basepoint.statement.Statement;
+import dev.horizon.basepoint.statement.StatementWriter;
+import java.util.function.UnaryOperator;
 
-/** Adds {@code LIMIT -1} to statements that have an offset but no limit. SQLite requires a limit with an offset. */
-final class SqliteLimits implements Decorator {
+final class SqliteLimits implements UnaryOperator<Statement> {
 
   @Override
-  public Node decorate(Node node) {
-    if (node instanceof Statement statement && statement.has(Clause.Offset.class)
-        && !statement.has(Clause.Limit.class)) {
-      return statement.before(Clause.Offset.class, new Clause.Limit(-1));
+  public Statement apply(Statement statement) {
+    if (statement.has(Offset.class) && !statement.has(Limit.class)) {
+      return statement.before(Offset.class, new AllRows());
     }
-    return node;
+    return statement;
+  }
+
+  record AllRows() implements Clause {
+
+    @Override
+    public void render(StatementWriter sql) {
+      sql.append("LIMIT -1");
+    }
   }
 }

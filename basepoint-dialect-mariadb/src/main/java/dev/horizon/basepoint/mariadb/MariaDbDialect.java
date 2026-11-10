@@ -1,12 +1,17 @@
 package dev.horizon.basepoint.mariadb;
 
 import dev.horizon.aquery.ParameterStyle;
-import dev.horizon.basepoint.Clause;
-import dev.horizon.basepoint.Decorator;
 import dev.horizon.basepoint.Dialect;
-import dev.horizon.basepoint.Expression;
-import dev.horizon.basepoint.Include;
-import dev.horizon.basepoint.LockMode;
+import dev.horizon.basepoint.expression.Concat;
+import dev.horizon.basepoint.expression.Expression;
+import dev.horizon.basepoint.expression.Now;
+import dev.horizon.basepoint.expression.Shift;
+import dev.horizon.basepoint.statement.Decorator;
+import dev.horizon.basepoint.statement.DefaultValues;
+import dev.horizon.basepoint.statement.Include;
+import dev.horizon.basepoint.statement.Lock;
+import dev.horizon.basepoint.statement.OnConflict;
+import dev.horizon.basepoint.statement.Statement;
 
 /**
  * The dialect for MariaDB 11.4 and later.
@@ -20,29 +25,27 @@ import dev.horizon.basepoint.LockMode;
  * <p>
  * {@code JSON_ARRAYAGG} returns at most {@code group_concat_max_len} bytes, which is 1 MB by default. Raise that
  * setting if an include can return more.
+ *
+ * @param parameters the placeholder style
  */
-public final class MariaDbDialect implements Dialect {
+public record MariaDbDialect(ParameterStyle parameters) implements Dialect {
 
   public static final String NAME = "MariaDB";
 
-  private final ParameterStyle parameters;
-  private final Decorator decorator = new MariaDbLimits()
-      .then(Decorator.of(Expression.Concat.class, concat -> (Expression) sql -> sql.append("CONCAT(")
+  private static final Decorator DECORATOR = Decorator.of(Statement.class, new MariaDbLimits())
+      .then(Decorator.of(Concat.class, concat -> (Expression) sql -> sql.append("CONCAT(")
           .render(concat.texts(), ", ").append(")")))
-      .then(Decorator.of(Expression.Now.class, now -> (Expression) sql -> sql.append("UTC_TIMESTAMP(6)")))
-      .then(Decorator.of(Expression.Shift.class, shift -> (Expression) sql -> sql.append("(").render(shift.timestamp())
+      .then(Decorator.of(Now.class, now -> (Expression) sql -> sql.append("UTC_TIMESTAMP(6)")))
+      .then(Decorator.of(Shift.class, shift -> (Expression) sql -> sql.append("(").render(shift.timestamp())
           .append(" + INTERVAL " + shift.microseconds() + " MICROSECOND)")))
-      .then(Decorator.of(Clause.OnConflict.class, MariaDbOnDuplicateKey::new))
-      .then(Decorator.of(Clause.DefaultValues.class, ignored -> new MariaDbEmptyRow()))
-      .then(Decorator.of(Include.class, MariaDbJson::new))
-      .then(Decorator.of(Clause.Lock.class, lock -> lock.mode() == LockMode.SHARE ? new MariaDbShareLock() : lock));
+      .then(Decorator.of(OnConflict.class, MariaDbOnDuplicateKey::new))
+      .then(Decorator.of(DefaultValues.class, values -> new MariaDbEmptyRow()))
+      .then(Decorator.of(Include.One.class, MariaDbObject::new))
+      .then(Decorator.of(Include.Many.class, MariaDbArray::new))
+      .then(Decorator.of(Lock.class, MariaDbLock::new));
 
   public MariaDbDialect() {
     this(ParameterStyle.QUESTION_MARK);
-  }
-
-  public MariaDbDialect(ParameterStyle parameters) {
-    this.parameters = parameters;
   }
 
   @Override
@@ -56,12 +59,7 @@ public final class MariaDbDialect implements Dialect {
   }
 
   @Override
-  public ParameterStyle parameters() {
-    return parameters;
-  }
-
-  @Override
   public Decorator decorator() {
-    return decorator;
+    return DECORATOR;
   }
 }
