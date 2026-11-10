@@ -3,4 +3,7 @@ module dev.horizon.basepoint {
   requires dev.horizon.aquery.ebnf;
 
   exports dev.horizon.basepoint;
+  exports dev.horizon.basepoint.expression;
+  exports dev.horizon.basepoint.filter;
+  exports dev.horizon.basepoint.statement;
 }

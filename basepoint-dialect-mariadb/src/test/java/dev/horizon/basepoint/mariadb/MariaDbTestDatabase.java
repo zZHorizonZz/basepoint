@@ -5,6 +5,7 @@ import dev.horizon.basepoint.contract.TestDatabase;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Map;
 import org.testcontainers.mariadb.MariaDBContainer;
 
 final class MariaDbTestDatabase implements TestDatabase {
@@ -28,6 +29,12 @@ final class MariaDbTestDatabase implements TestDatabase {
   }
 
   @Override
+  public Map<String, String> types() {
+    return Map.of("json", "JSON", "timestamp", "DATETIME(6)", "text", "TEXT CHARACTER SET utf8mb4", "bool", "BOOLEAN",
+        "double", "DOUBLE");
+  }
+
+  @Override
   public boolean returnsUpdatedRows() throws SQLException {
     try (Connection connection = connect()) {
       return connection.getMetaData().getDatabaseMajorVersion() >= 13;
@@ -40,12 +47,17 @@ final class MariaDbTestDatabase implements TestDatabase {
   }
 
   @Override
-  public String jsonType() {
-    return "JSON";
+  public boolean keepsDecimals() {
+    return true;
   }
 
   @Override
-  public String timestampType() {
-    return "DATETIME(6)";
+  public boolean locksRows() {
+    return true;
+  }
+
+  @Override
+  public boolean refusedLock(SQLException failure) {
+    return failure.getErrorCode() == 1205 || failure.getErrorCode() == 3572;
   }
 }

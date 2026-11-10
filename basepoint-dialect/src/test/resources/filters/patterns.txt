@@ -1,0 +1,27 @@
+A quoted string that ends with * matches a prefix.
+filter orders: state = "C*"
+rows: 3, 4
+
+A quoted string that starts with * matches a suffix.
+filter orders: state = "*N"
+rows: 1, 2, 5
+
+A * between two parts matches any text between them.
+filter orders: state = "C*D"
+rows: 3, 4
+
+Not equal to a pattern.
+filter orders: state != "C*"
+rows: 1, 2, 5
+
+% and _ in a pattern match only themselves.
+filter items: sku = "a%b_*"
+rows: 12
+
+[ in a pattern matches only itself.
+filter items: sku = "x[*"
+rows: 14
+
+A pattern of only * matches every text.
+filter items: sku = "*"
+rows: 10, 11, 12, 13, 14, 15

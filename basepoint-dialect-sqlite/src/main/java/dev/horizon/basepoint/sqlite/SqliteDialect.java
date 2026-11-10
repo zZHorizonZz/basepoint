@@ -1,12 +1,16 @@
 package dev.horizon.basepoint.sqlite;
 
 import dev.horizon.aquery.ParameterStyle;
-import dev.horizon.basepoint.Clause;
-import dev.horizon.basepoint.Decorator;
 import dev.horizon.basepoint.Dialect;
-import dev.horizon.basepoint.Expression;
-import dev.horizon.basepoint.Include;
-import dev.horizon.basepoint.Statement;
+import dev.horizon.basepoint.expression.Expression;
+import dev.horizon.basepoint.expression.JsonKey;
+import dev.horizon.basepoint.expression.Length;
+import dev.horizon.basepoint.expression.Now;
+import dev.horizon.basepoint.expression.Shift;
+import dev.horizon.basepoint.statement.Decorator;
+import dev.horizon.basepoint.statement.Include;
+import dev.horizon.basepoint.statement.Lock;
+import dev.horizon.basepoint.statement.Statement;
 
 /**
  * The dialect for SQLite 3.44 and later.
@@ -16,32 +20,30 @@ import dev.horizon.basepoint.Statement;
  * {@code json_group_array}, the value of a JSON key with {@code json_extract}, and adds {@code LIMIT -1} to an offset
  * without a limit. SQLite has no locks of rows: a
  * transaction that writes locks the whole database, so the dialect writes no lock.
+ *
+ * @param parameters the placeholder style
  */
-public final class SqliteDialect implements Dialect {
+public record SqliteDialect(ParameterStyle parameters) implements Dialect {
 
   public static final String NAME = "SQLite";
 
-  private final ParameterStyle parameters;
-  private final Decorator decorator = new SqliteLimits()
-      .then(Decorator.of(Expression.Length.class, length -> (Expression) sql -> sql.append("length(")
+  private static final Decorator DECORATOR = Decorator.of(Statement.class, new SqliteLimits())
+      .then(Decorator.of(Length.class, length -> (Expression) sql -> sql.append("length(")
           .render(length.text()).append(")")))
-      .then(Decorator.of(Expression.Now.class, now -> (Expression) sql -> sql.append(
+      .then(Decorator.of(Now.class, now -> (Expression) sql -> sql.append(
           "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')")))
-      .then(Decorator.of(Expression.Shift.class, shift -> (Expression) sql -> sql.append(
+      .then(Decorator.of(Shift.class, shift -> (Expression) sql -> sql.append(
           "strftime('%Y-%m-%dT%H:%M:%fZ', ").render(shift.timestamp()).append(", '"
               + shift.seconds().toPlainString()
               + " seconds')")))
-      .then(Decorator.of(Include.class, SqliteJson::new))
-      .then(Decorator.of(Expression.JsonKey.class, SqliteJsonKey::new))
-      .then(Decorator.of(Statement.class, statement -> statement.find(Clause.Lock.class).map(statement::remove)
+      .then(Decorator.of(Include.One.class, SqliteObject::new))
+      .then(Decorator.of(Include.Many.class, SqliteArray::new))
+      .then(Decorator.of(JsonKey.class, SqliteJsonKey::new))
+      .then(Decorator.of(Statement.class, statement -> statement.find(Lock.class).map(statement::remove)
           .orElse(statement)));
 
   public SqliteDialect() {
     this(ParameterStyle.QUESTION_MARK);
-  }
-
-  public SqliteDialect(ParameterStyle parameters) {
-    this.parameters = parameters;
   }
 
   @Override
@@ -55,12 +57,7 @@ public final class SqliteDialect implements Dialect {
   }
 
   @Override
-  public ParameterStyle parameters() {
-    return parameters;
-  }
-
-  @Override
   public Decorator decorator() {
-    return decorator;
+    return DECORATOR;
   }
 }

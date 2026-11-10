@@ -1,11 +1,17 @@
 package dev.horizon.basepoint.sqlserver;
 
 import dev.horizon.aquery.ParameterStyle;
-import dev.horizon.basepoint.Clause;
-import dev.horizon.basepoint.Decorator;
 import dev.horizon.basepoint.Dialect;
-import dev.horizon.basepoint.Expression;
-import dev.horizon.basepoint.Include;
+import dev.horizon.basepoint.expression.Concat;
+import dev.horizon.basepoint.expression.Expression;
+import dev.horizon.basepoint.expression.Length;
+import dev.horizon.basepoint.expression.Now;
+import dev.horizon.basepoint.expression.Shift;
+import dev.horizon.basepoint.statement.Clause;
+import dev.horizon.basepoint.statement.Decorator;
+import dev.horizon.basepoint.statement.Include;
+import dev.horizon.basepoint.statement.Statement;
+import dev.horizon.basepoint.statement.With;
 
 /**
  * The dialect for SQL Server 2017 and later.
@@ -15,30 +21,29 @@ import dev.horizon.basepoint.Include;
  * For JDBC, use {@link ParameterStyle#QUESTION_MARK}. The dialect renders upserts as {@code MERGE}, returned rows as
  * {@code OUTPUT}, limits as {@code TOP} or {@code OFFSET ... FETCH}, includes as {@code FOR JSON}, and locks as
  * table hints, such as {@code WITH (UPDLOCK, ROWLOCK)}.
+ *
+ * @param parameters the placeholder style
  */
-public final class SqlServerDialect implements Dialect {
+public record SqlServerDialect(ParameterStyle parameters) implements Dialect {
 
   public static final String NAME = "SQL Server";
 
-  private final ParameterStyle parameters;
-  private final Decorator decorator = new SqlServerLock()
-      .then(Decorator.of(Expression.Concat.class, concat -> (Expression) sql -> sql.append("(")
+  private static final Decorator DECORATOR = Decorator.of(Statement.class, new SqlServerLock())
+      .then(Decorator.of(Concat.class, concat -> (Expression) sql -> sql.append("(")
           .render(concat.texts(), " + ").append(")")))
-      .then(Decorator.of(Expression.Length.class, length -> (Expression) sql -> sql.append("(LEN(")
+      .then(Decorator.of(Length.class, length -> (Expression) sql -> sql.append("(LEN(")
           .render(length.text()).append(" + 'x') - 1)")))
-      .then(Decorator.of(Expression.Now.class, now -> (Expression) sql -> sql.append("SYSUTCDATETIME()")))
-      .then(Decorator.of(Expression.Shift.class, SqlServerShift::new))
-      .then(Decorator.of(Clause.With.class, with -> (Clause) sql -> sql.append("WITH ").render(with.queries(), ", ")))
-      .then(new SqlServerMerge()).then(new SqlServerOutput())
-      .then(new SqlServerPaging())
-      .then(Decorator.of(Include.class, SqlServerJson::new));
+      .then(Decorator.of(Now.class, now -> (Expression) sql -> sql.append("SYSUTCDATETIME()")))
+      .then(Decorator.of(Shift.class, SqlServerShift::new))
+      .then(Decorator.of(With.class, with -> (Clause) sql -> sql.append("WITH ").render(with.queries(), ", ")))
+      .then(Decorator.of(Statement.class, new SqlServerMerge()))
+      .then(Decorator.of(Statement.class, new SqlServerOutput()))
+      .then(Decorator.of(Statement.class, new SqlServerPaging()))
+      .then(Decorator.of(Include.One.class, SqlServerObject::new))
+      .then(Decorator.of(Include.Many.class, SqlServerArray::new));
 
   public SqlServerDialect() {
     this(ParameterStyle.AT_P);
-  }
-
-  public SqlServerDialect(ParameterStyle parameters) {
-    this.parameters = parameters;
   }
 
   @Override
@@ -52,12 +57,7 @@ public final class SqlServerDialect implements Dialect {
   }
 
   @Override
-  public ParameterStyle parameters() {
-    return parameters;
-  }
-
-  @Override
   public Decorator decorator() {
-    return decorator;
+    return DECORATOR;
   }
 }

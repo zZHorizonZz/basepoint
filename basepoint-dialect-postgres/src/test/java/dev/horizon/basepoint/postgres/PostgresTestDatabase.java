@@ -6,6 +6,7 @@ import dev.horizon.basepoint.contract.TestDatabase;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Map;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 final class PostgresTestDatabase implements TestDatabase {
@@ -29,6 +30,11 @@ final class PostgresTestDatabase implements TestDatabase {
   }
 
   @Override
+  public Map<String, String> types() {
+    return Map.of("json", "JSONB", "timestamp", "TIMESTAMPTZ", "text", "TEXT", "bool", "BOOLEAN", "double", "DOUBLE PRECISION");
+  }
+
+  @Override
   public boolean returnsUpdatedRows() {
     return true;
   }
@@ -39,12 +45,17 @@ final class PostgresTestDatabase implements TestDatabase {
   }
 
   @Override
-  public String jsonType() {
-    return "JSONB";
+  public boolean keepsDecimals() {
+    return true;
   }
 
   @Override
-  public String timestampType() {
-    return "TIMESTAMPTZ";
+  public boolean locksRows() {
+    return true;
+  }
+
+  @Override
+  public boolean refusedLock(SQLException failure) {
+    return "55P03".equals(failure.getSQLState());
   }
 }

@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Map;
 
 final class SqliteTestDatabase implements TestDatabase {
 
@@ -23,9 +24,14 @@ final class SqliteTestDatabase implements TestDatabase {
       Path file = Files.createTempFile("basepoint", ".db");
       file.toFile().deleteOnExit();
       return DriverManager.getConnection("jdbc:sqlite:" + file);
-    } catch (IOException failed) {
-      throw new UncheckedIOException(failed);
+    } catch (IOException failure) {
+      throw new UncheckedIOException(failure);
     }
+  }
+
+  @Override
+  public Map<String, String> types() {
+    return Map.of("json", "TEXT", "timestamp", "TEXT", "text", "TEXT", "bool", "INTEGER", "double", "REAL");
   }
 
   @Override
@@ -39,12 +45,17 @@ final class SqliteTestDatabase implements TestDatabase {
   }
 
   @Override
-  public String jsonType() {
-    return "TEXT";
+  public boolean keepsDecimals() {
+    return false;
   }
 
   @Override
-  public String timestampType() {
-    return "TEXT";
+  public boolean locksRows() {
+    return false;
+  }
+
+  @Override
+  public boolean refusedLock(SQLException failure) {
+    return false;
   }
 }

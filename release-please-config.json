@@ -17,7 +17,7 @@
         "basepoint-dialect-mariadb/pom.xml",
         "basepoint-dialect-sqlserver/pom.xml",
         "basepoint-dialect-sqlite/pom.xml",
-        "README.md"
+        "docs/get-started.md"
       ]
     }
   },

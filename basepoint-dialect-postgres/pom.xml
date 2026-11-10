@@ -35,6 +35,24 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>dev.horizon</groupId>
+      <artifactId>basepoint-dialect-mariadb</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>dev.horizon</groupId>
+      <artifactId>basepoint-dialect-sqlserver</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>dev.horizon</groupId>
+      <artifactId>basepoint-dialect-sqlite</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
       <scope>test</scope>

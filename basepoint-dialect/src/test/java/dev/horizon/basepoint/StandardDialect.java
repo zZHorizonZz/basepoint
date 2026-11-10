@@ -1,6 +1,7 @@
 package dev.horizon.basepoint;
 
 import dev.horizon.aquery.ParameterStyle;
+import dev.horizon.basepoint.statement.Decorator;
 
 final class StandardDialect implements Dialect {
 

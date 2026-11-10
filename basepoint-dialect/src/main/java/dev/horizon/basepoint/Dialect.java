@@ -1,8 +1,9 @@
 package dev.horizon.basepoint;
 
 import dev.horizon.aquery.ParameterStyle;
-import dev.horizon.basepoint.impl.CollectionImpl;
-import dev.horizon.basepoint.impl.DecoratedDialect;
+import dev.horizon.basepoint.statement.Decorator;
+import dev.horizon.basepoint.statement.Statement;
+import dev.horizon.basepoint.statement.StatementWriter;
 
 /**
  * The SQL of one database.
@@ -50,7 +51,7 @@ public interface Dialect {
    * @param decorator the decorator to apply first, for example one that adds a tenant filter
    * @return the new dialect
    */
-  default Dialect decorated(Decorator decorator) {
+  default Dialect decorate(Decorator decorator) {
     return new DecoratedDialect(this, decorator);
   }
 
@@ -61,6 +62,16 @@ public interface Dialect {
    * @return the collection reference
    */
   default CollectionReference collection(String table) {
-    return new CollectionImpl(this, table);
+    return new CollectionReference(this, table);
+  }
+
+  /**
+   * Renders a statement in this dialect.
+   *
+   * @param statement the statement, which the decorator of the dialect rewrites first
+   * @return the SQL text and its placeholder values
+   */
+  default RenderedStatement render(Statement statement) {
+    return new StatementWriter(this).render(statement).build();
   }
 }

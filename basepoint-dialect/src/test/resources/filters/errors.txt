@@ -1,0 +1,51 @@
+A term without a column.
+filter orders: plain
+error: The filter term 'plain' has no column.
+
+A field of three parts.
+filter orders: a.b.c = 1
+error: Unsupported field path 'a.b.c'.
+
+A key of a JSON object compares only as text.
+filter labelled: labels.env > 1
+error: Unsupported operator '>' on a key of a JSON object
+
+A key of a JSON object supports only :* after the key.
+filter labelled: labels.env:x
+error: A key of a JSON object supports only ':*'
+
+null does not compare by order.
+filter orders: total > null
+error: Cannot compare null with >. Use = or != with null.
+
+A key with a quote.
+filter labelled: labels:"a\"b"
+error: A JSON key must not be empty or contain
+
+A string without its closing quote.
+filter orders: state = "OPEN
+error: unterminated string starting at position 8
+
+A group without its closing parenthesis.
+filter orders: (state = OPEN
+error: expected RPAREN but got END
+
+A closing parenthesis without its group.
+filter orders: state = OPEN)
+error: expected END but got RPAREN
+
+An operator without a value.
+filter orders: total >
+error: expected arg after >
+
+AND without a second term reads AND as a term without a column.
+filter orders: state = OPEN AND
+error: The filter term 'AND' has no column.
+
+An operator that the syntax does not have leaves a term without a column.
+filter orders: total ~ 5
+error: The filter term 'total' has no column.
+
+Parentheses nest at most 64 levels deep.
+filter orders: (((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((state = OPEN)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+error: parentheses nest more than 64 levels deep

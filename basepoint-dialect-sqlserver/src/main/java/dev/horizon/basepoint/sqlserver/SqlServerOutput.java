@@ -1,44 +1,35 @@
 package dev.horizon.basepoint.sqlserver;
 
-import dev.horizon.basepoint.Clause;
-import dev.horizon.basepoint.Decorator;
-import dev.horizon.basepoint.Node;
-import dev.horizon.basepoint.Statement;
-import dev.horizon.basepoint.StatementWriter;
+import dev.horizon.basepoint.statement.Assignments;
+import dev.horizon.basepoint.statement.Clause;
+import dev.horizon.basepoint.statement.DeleteFrom;
+import dev.horizon.basepoint.statement.InsertInto;
+import dev.horizon.basepoint.statement.OnConflict;
+import dev.horizon.basepoint.statement.Returning;
+import dev.horizon.basepoint.statement.Statement;
+import dev.horizon.basepoint.statement.StatementWriter;
 import java.util.List;
+import java.util.function.UnaryOperator;
 
-/**
- * Rewrites {@link Clause.Returning} into {@code OUTPUT}.
- *
- * <p>
- * The clause moves to the position that SQL Server expects: after the column list of an INSERT, after the
- * {@code SET} of an UPDATE, or after the table of a DELETE. Deletes return {@code DELETED} rows. Inserts and updates
- * return {@code INSERTED} rows.
- */
-final class SqlServerOutput implements Decorator {
+final class SqlServerOutput implements UnaryOperator<Statement> {
 
   @Override
-  public Node decorate(Node node) {
-    if (!(node instanceof Statement statement)) {
-      return node;
+  public Statement apply(Statement statement) {
+    if (statement.has(OnConflict.class)) {
+      return statement;
     }
-    return statement.find(Clause.Returning.class).map(returning -> {
-      boolean deleted = statement.has(Clause.DeleteFrom.class);
-      Output output = new Output(deleted ? "DELETED" : "INSERTED", returning.columns());
-      Statement without = statement.remove(returning);
-      if (without.has(Clause.Set.class)) {
-        return without.after(Clause.Set.class, output);
+    return statement.find(Returning.class).map(returning -> {
+      Statement rest = statement.remove(returning);
+      if (rest.has(DeleteFrom.class)) {
+        return rest.after(DeleteFrom.class, new Output("DELETED", returning.columns()));
       }
-      return deleted ? without.after(Clause.DeleteFrom.class, output) : without.after(Clause.InsertInto.class, output);
+      Output output = new Output("INSERTED", returning.columns());
+      return rest.has(Assignments.class) ? rest.after(Assignments.class, output)
+          : rest.after(InsertInto.class,
+              output);
     }).orElse(statement);
   }
 
-  /**
-   * {@code OUTPUT INSERTED.*} or {@code OUTPUT DELETED.*}, or the same with a column list.
-   *
-   * @param rows {@code INSERTED} or {@code DELETED}
-   * @param columns the columns to return. An empty list returns all columns.
-   */
   record Output(String rows, List<String> columns) implements Clause {
 
     @Override

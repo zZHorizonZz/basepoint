@@ -1,41 +1,31 @@
 package dev.horizon.basepoint.sqlserver;
 
-import dev.horizon.basepoint.Clause;
-import dev.horizon.basepoint.Decorator;
-import dev.horizon.basepoint.Node;
-import dev.horizon.basepoint.Statement;
-import dev.horizon.basepoint.StatementWriter;
+import dev.horizon.basepoint.LockMode;
+import dev.horizon.basepoint.statement.Clause;
+import dev.horizon.basepoint.statement.From;
+import dev.horizon.basepoint.statement.Lock;
+import dev.horizon.basepoint.statement.Statement;
+import dev.horizon.basepoint.statement.StatementWriter;
+import java.util.Map;
+import java.util.function.UnaryOperator;
 
-/**
- * Writes the lock of a query as table hints, the way SQL Server locks rows: {@code FROM ... WITH (UPDLOCK, ROWLOCK)}
- * in place of {@code FOR UPDATE} at the end.
- */
-final class SqlServerLock implements Decorator {
+final class SqlServerLock implements UnaryOperator<Statement> {
 
-  /**
-   * {@code FROM} with the table hints of a lock.
-   *
-   * @param hints the hints, such as {@code UPDLOCK, ROWLOCK, READPAST}
-   */
+  private static final Map<LockMode, String> HINTS = Map.of(LockMode.SHARE, "HOLDLOCK, ROWLOCK", LockMode.UPDATE,
+      "UPDLOCK, ROWLOCK", LockMode.UPDATE_SKIP_LOCKED, "UPDLOCK, ROWLOCK, READPAST", LockMode.UPDATE_NOWAIT,
+      "UPDLOCK, ROWLOCK, NOWAIT");
+
+  @Override
+  public Statement apply(Statement statement) {
+    return statement.find(Lock.class).flatMap(lock -> statement.find(From.class).map(from -> statement
+        .remove(lock).replace(from, new HintedFrom(HINTS.get(lock.mode()))))).orElse(statement);
+  }
+
   record HintedFrom(String hints) implements Clause {
 
     @Override
     public void render(StatementWriter sql) {
       sql.append("FROM ").render(sql.source()).append(" AS " + sql.qualifier() + " WITH (" + hints + ")");
     }
-  }
-
-  @Override
-  public Node decorate(Node node) {
-    if (!(node instanceof Statement statement)) {
-      return node;
-    }
-    return statement.find(Clause.Lock.class).flatMap(lock -> statement.find(Clause.From.class).map(from -> statement
-        .remove(lock).replace(from, new HintedFrom(switch (lock.mode()) {
-          case SHARE -> "HOLDLOCK, ROWLOCK";
-          case UPDATE -> "UPDLOCK, ROWLOCK";
-          case UPDATE_SKIP_LOCKED -> "UPDLOCK, ROWLOCK, READPAST";
-          case UPDATE_NOWAIT -> "UPDLOCK, ROWLOCK, NOWAIT";
-        })))).orElse(statement);
   }
 }

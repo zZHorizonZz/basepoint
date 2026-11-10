@@ -1,21 +1,16 @@
 package dev.horizon.basepoint.sqlserver;
 
-import dev.horizon.basepoint.Expression;
-import dev.horizon.basepoint.StatementWriter;
+import dev.horizon.basepoint.UnsupportedFeatureException;
+import dev.horizon.basepoint.expression.Expression;
+import dev.horizon.basepoint.expression.Shift;
+import dev.horizon.basepoint.statement.StatementWriter;
 
-/**
- * A timestamp moved by a duration, rendered with {@code DATEADD}. {@code DATEADD} takes an {@code int}, so a duration in
- * microseconds overflows after 35 minutes: the timestamp moves by the whole seconds first, and then by the
- * microseconds that are left.
- *
- * @param shift the timestamp and the duration
- */
-record SqlServerShift(Expression.Shift shift) implements Expression {
+record SqlServerShift(Shift shift) implements Expression {
 
   SqlServerShift {
     long seconds = shift.duration().getSeconds();
     if (seconds < Integer.MIN_VALUE || seconds > Integer.MAX_VALUE) {
-      throw new IllegalArgumentException("SQL Server moves a timestamp by at most 68 years, but the duration is "
+      throw new UnsupportedFeatureException("SQL Server moves a timestamp by at most 68 years, but the duration is "
           + shift.duration() + ".");
     }
   }
