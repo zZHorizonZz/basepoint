@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/zZHorizonZz/basepoint/compare/v0.4.0...v0.4.1) (2026-11-10)
+
+
+### Fixes
+
+* give SQLite times six digits of fraction, so that they compare as text with the times of clients. ([#36](https://github.com/zZHorizonZz/basepoint/issues/36)) ([5104cab](https://github.com/zZHorizonZz/basepoint/commit/5104cab0920684d4305647c4368866f3a92fa43e))
+
 ## [0.4.0](https://github.com/zZHorizonZz/basepoint/compare/v0.3.1...v0.4.0) (2026-11-10)
 
 
