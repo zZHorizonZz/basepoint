@@ -1,6 +1,7 @@
 package dev.horizon.basepoint;
 
 import dev.horizon.basepoint.impl.QueryImpl;
+import java.math.BigDecimal;
 import java.time.Duration;
 
 import java.util.List;
@@ -502,8 +503,8 @@ public interface Expression extends Node {
   }
 
   /**
-   * A timestamp moved by a duration, rendered as {@code (timestamp + INTERVAL 'n microseconds')}. Dialects whose
-   * database moves a timestamp otherwise decorate it.
+   * A timestamp moved by a duration, rendered as {@code (timestamp + INTERVAL 'n seconds')}, with the seconds to the
+   * microsecond. Dialects whose database moves a timestamp otherwise decorate it.
    *
    * @param timestamp the timestamp
    * @param duration the duration, earlier when it is negative
@@ -524,9 +525,18 @@ public interface Expression extends Node {
       return Math.addExact(Math.multiplyExact(duration.getSeconds(), 1_000_000L), duration.getNano() / 1_000);
     }
 
+    /**
+     * Returns the duration in seconds, to the microsecond.
+     *
+     * @return the seconds, for example {@code -86400.000000}, negative for an earlier time
+     */
+    public BigDecimal seconds() {
+      return BigDecimal.valueOf(microseconds(), 6);
+    }
+
     @Override
     public void render(StatementWriter sql) {
-      sql.append("(").render(timestamp).append(" + INTERVAL '" + microseconds() + " microseconds')");
+      sql.append("(").render(timestamp).append(" + INTERVAL '" + seconds().toPlainString() + " seconds')");
     }
   }
 

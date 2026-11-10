@@ -7,7 +7,6 @@ import dev.horizon.basepoint.Dialect;
 import dev.horizon.basepoint.Expression;
 import dev.horizon.basepoint.Include;
 import dev.horizon.basepoint.Statement;
-import java.math.BigDecimal;
 
 /**
  * The dialect for SQLite 3.44 and later.
@@ -30,8 +29,7 @@ public final class SqliteDialect implements Dialect {
           "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')")))
       .then(Decorator.of(Expression.Shift.class, shift -> (Expression) sql -> sql.append(
           "strftime('%Y-%m-%dT%H:%M:%fZ', ").render(shift.timestamp()).append(", '"
-              + BigDecimal.valueOf(shift
-                  .microseconds(), 6).toPlainString()
+              + shift.seconds().toPlainString()
               + " seconds')")))
       .then(Decorator.of(Include.class, SqliteJson::new))
       .then(Decorator.of(Expression.JsonKey.class, SqliteJsonKey::new))
